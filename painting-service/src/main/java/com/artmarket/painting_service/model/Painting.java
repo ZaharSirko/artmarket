@@ -24,7 +24,6 @@ public class Painting {
     @Column(name = "id", nullable = false)
     @JdbcTypeCode(SqlTypes.BIGINT)
     Long id;
-
     @NonNull
     String title;
     @NonNull
@@ -37,10 +36,6 @@ public class Painting {
     BigDecimal price;
     @NonNull
     String imageURL;
-
    @Builder.Default
    Instant createdAt = Instant.now();
-
-
-
 }

@@ -13,17 +13,18 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 public class PaintingController {
     private static  final String HOMEPAGE = "/";
     private  static final String SEARCH = "/search";
+    private static final String CREATE_PAINTING = "/create";
+    private static final String IMAGES = "/images/{filename:.+}";
+    private static final String BY_ID = "/{id}";
     @Value("${upload.directory}")
     private String uploadDirectory;
 
@@ -48,7 +49,9 @@ public class PaintingController {
         return new ResponseEntity<>(foundPaintings, HttpStatus.OK);
     }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(
+            path = CREATE_PAINTING,
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> createPainting(
             @ModelAttribute PaintingRequest paintingRequest,
             @RequestParam("image") MultipartFile imageFile) {
@@ -57,7 +60,7 @@ public class PaintingController {
         return ResponseEntity.ok("Painting created successfully");
     }
 
-    @GetMapping("/images/{filename:.+}")
+    @GetMapping(IMAGES)
     public ResponseEntity<Resource> serveImage(@PathVariable String filename) {
         try {
             Path filePath = Paths.get(uploadDirectory).resolve(filename);
@@ -75,7 +78,7 @@ public class PaintingController {
         }
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping(BY_ID)
     public ResponseEntity<String> deletePainting(@PathVariable Long id) {
         paintingService.deletePainting(id);
         return ResponseEntity.ok("Painting deleted successfully");
