@@ -62,9 +62,7 @@ public class PaintingService {
     @Transactional
     public void createPainting(PaintingRequest paintingRequest, MultipartFile imageFile) {
        try {
-
            String imageUrl = saveImage(imageFile);
-
            Painting painting = Painting.builder()
                    .author(paintingRequest.author())
                    .price(paintingRequest.price())
