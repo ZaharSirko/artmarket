@@ -45,6 +45,26 @@ services:
     networks:
       - artmarket_network
 
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - artmarket_network
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - artmarket_network
+
 # Мережа для зв'язку між сервісами
 networks:
   artmarket_network:
@@ -54,3 +74,4 @@ networks:
 volumes:
   postgres_data:
   elasticsearch_data:
+  grafana_data:

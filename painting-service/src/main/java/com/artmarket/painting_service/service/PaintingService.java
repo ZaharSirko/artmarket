@@ -9,6 +9,8 @@ import com.artmarket.painting_service.repository.PaintingElasticsearchRepository
 import com.artmarket.painting_service.repository.PaintingRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -33,6 +35,7 @@ import static java.util.Comparator.comparingInt;
 @Service
 @RequiredArgsConstructor
 public class PaintingService {
+    private static final Logger log = LoggerFactory.getLogger(PaintingService.class);
     private final PaintingRepository paintingRepository;
 
     private final PaintingElasticsearchRepository paintingElasticsearchRepository;
@@ -72,6 +75,7 @@ public class PaintingService {
                    .imageURL(imageUrl)
                    .build();
            paintingRepository.save(painting);
+           log.info("Painting created: {}", painting);
        }
        catch (Exception e) {
            throw new RuntimeException("Error saving painting: " + e.getMessage(), e);
@@ -85,9 +89,11 @@ public class PaintingService {
 
         if (painting.getImageURL() != null) {
             deleteImageFile(painting.getImageURL());
+            log.info("Painting images deleted: {}", painting);
         }
 
         paintingRepository.deleteById(id);
+        log.info("Painting deleted: {}", painting);
     }
 
 
@@ -127,11 +133,12 @@ public class PaintingService {
         Path uploadPath = Paths.get(uploadDirectory);
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
+            log.info("Directories created: {}", uploadPath);
         }
 
         Path filePath = uploadPath.resolve(fileName);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
+        log.info("Image saved: {}", fileName);
         return baseUrl + "images/" + fileName;
     }
 
@@ -140,7 +147,7 @@ public class PaintingService {
             Path imagePath = Paths.get(uploadDirectory, extractFilenameFromUrl(imageUrl));
             Files.deleteIfExists(imagePath);
         } catch (IOException e) {
-//            log.error("Failed to delete image file: {}", imageUrl, e);
+            log.error("Failed to delete image file: {}", imageUrl, e);
             throw new RuntimeException("Error deleting image file: " + imageUrl, e);
         }
     }

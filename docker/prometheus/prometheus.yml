@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 2s
+  evaluation_interval: 2s
+
+scrape_configs:
+  - job_name: 'api-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:9090']
+  - job_name: 'painting-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:8080'] ## only for demo purposes don't use host.docker.internal in production
+        labels:
+          application: 'My Painting Service Application'
