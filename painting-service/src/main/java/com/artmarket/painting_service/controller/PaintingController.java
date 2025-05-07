@@ -9,22 +9,31 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.http.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/paintings")
 public class PaintingController {
     private static  final String HOMEPAGE = "/";
     private  static final String SEARCH = "/search";
     private static final String CREATE_PAINTING = "/create";
     private static final String IMAGES = "/images/{filename:.+}";
     private static final String BY_ID = "/{id}";
+    private static final String UPDATE_BY_ID = "/update/{id}";
+    private static final String SECURE = "/secure";
+    private static final String BY_USER_ID = "/user/{userId}";
     @Value("${upload.directory}")
     private String uploadDirectory;
 
@@ -78,11 +87,35 @@ public class PaintingController {
         }
     }
 
+    @PutMapping(UPDATE_BY_ID)
+    public ResponseEntity<String> updatePainting(
+            @PathVariable Long id,
+            @RequestPart("data") PaintingRequest paintingRequest,
+            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile) throws IOException {
+        paintingService.updatePainting(id, paintingRequest, imageFile);
+        return ResponseEntity.ok("Painting updated successfully");
+    }
+
+
     @DeleteMapping(BY_ID)
-    public ResponseEntity<String> deletePainting(@PathVariable Long id) {
+    public ResponseEntity<String> deletePainting(@PathVariable Long id) throws AccessDeniedException {
         paintingService.deletePainting(id);
         return ResponseEntity.ok("Painting deleted successfully");
     }
 
+    @GetMapping(SECURE)
+    public ResponseEntity<String> secure(@AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject(); // Keycloak 'sub'
+        List<String> roles = jwt.getClaimAsStringList("roles");
+        return ResponseEntity.ok("Hello " + userId + ", roles: " + roles);
+    }
+
+    @GetMapping(BY_USER_ID)
+    public ResponseEntity<Page<PaintingResponse>> getPaintingsByUser(
+            @PathVariable Long userId,
+            @RequestParam(name = "page", defaultValue = "0") int page, @RequestParam(name = "size", defaultValue = "10") int size) {
+        var allUserPaintings = paintingService.getUserPaintings(userId,page, size);
+        return new ResponseEntity<>(allUserPaintings, HttpStatus.OK);
+    }
 
 }

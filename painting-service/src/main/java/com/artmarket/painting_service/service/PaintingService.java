@@ -7,11 +7,12 @@ import com.artmarket.painting_service.model.Painting;
 import com.artmarket.painting_service.model.PaintingDoc;
 import com.artmarket.painting_service.repository.PaintingElasticsearchRepository;
 import com.artmarket.painting_service.repository.PaintingRepository;
+import com.artmarket.painting_service.service.heplers.AccessControlHelper;
+import com.artmarket.painting_service.service.heplers.PaintingHelpers;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -21,14 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.nio.file.AccessDeniedException;
+import java.util.*;
 
 import static java.util.Comparator.comparingInt;
 
@@ -37,65 +32,93 @@ import static java.util.Comparator.comparingInt;
 public class PaintingService {
     private static final Logger log = LoggerFactory.getLogger(PaintingService.class);
     private final PaintingRepository paintingRepository;
-
     private final PaintingElasticsearchRepository paintingElasticsearchRepository;
-
-    @Value("${upload.directory}")
-    private String uploadDirectory;
-
-    @Value("${app.base-url}")
-    private String baseUrl;
+    private final PaintingHelpers paintingHelpers;
+    private final AccessControlHelper accessControlHelper;
 
 
-    public Page<PaintingResponse> getPaintings(int page,int size) {
+    public Page<PaintingResponse> getPaintings(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return paintingRepository.findAll(pageable)
                 .map(painting -> new PaintingResponse(
-                        painting.getId(),
-                        painting.getTitle(),
-                        painting.getDescription(),
-                        painting.getAuthor(),
-                        painting.getReleaseDate(),
-                        painting.getPrice(),
-                        painting.getImageURL()
-                )
-        );
+                                painting.getId(),
+                                painting.getTitle(),
+                                painting.getDescription(),
+                                painting.getAuthor(),
+                                painting.getReleaseDate(),
+                                painting.getPrice(),
+                                painting.getImageURL(),
+                                painting.getUserId()
+                        )
+                );
     }
 
     @Transactional
     public void createPainting(PaintingRequest paintingRequest, MultipartFile imageFile) {
-       try {
-           String imageUrl = saveImage(imageFile);
-           Painting painting = Painting.builder()
-                   .author(paintingRequest.author())
-                   .price(paintingRequest.price())
-                   .title(paintingRequest.title())
-                   .description(paintingRequest.description())
-                   .releaseDate(paintingRequest.releaseDate())
-                   .imageURL(imageUrl)
-                   .build();
-           paintingRepository.save(painting);
-           log.info("Painting created: {}", painting);
-       }
-       catch (Exception e) {
-           throw new RuntimeException("Error saving painting: " + e.getMessage(), e);
-       }
+        try {
+            accessControlHelper.assertCanCreatePainting();
+
+            Long userId = accessControlHelper.getCurrentUserId();
+
+            String imageUrl = paintingHelpers.saveImage(imageFile);
+            log.info("Image saved: {}", imageUrl);
+
+            Painting painting = Painting.builder()
+                    .author(paintingRequest.author())
+                    .price(paintingRequest.price())
+                    .title(paintingRequest.title())
+                    .description(paintingRequest.description())
+                    .releaseDate(paintingRequest.releaseDate())
+                    .imageURL(imageUrl)
+                    .userId(userId)
+                    .build();
+            paintingRepository.save(painting);
+            log.info("Painting created: {}", painting);
+        } catch (Exception e) {
+            throw new RuntimeException("Error saving painting: " + e.getMessage(), e);
+        }
     }
 
     @Transactional
-    public void deletePainting(Long id) {
+    public void deletePainting(Long id) throws AccessDeniedException {
         Painting painting = paintingRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Painting not found"));
 
-        if (painting.getImageURL() != null) {
-            deleteImageFile(painting.getImageURL());
-            log.info("Painting images deleted: {}", painting);
-        }
+        accessControlHelper.checkDeletePermission(painting.getUserId());
+
+
+        paintingHelpers.deleteImageFile(painting.getImageURL());
+        log.info("Painting image deleted: {}", painting.getImageURL());
+
 
         paintingRepository.deleteById(id);
-        log.info("Painting deleted: {}", painting);
+        log.info("Painting deleted: {}", painting.getId());
     }
 
+
+    @Transactional
+    public void updatePainting(Long id, PaintingRequest paintingRequest, MultipartFile imageFile) throws IOException {
+        Painting painting = paintingRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Painting not found"));
+
+        accessControlHelper.checkUpdatePermission(painting.getUserId());
+
+        if (imageFile != null && !imageFile.isEmpty()) {
+            paintingHelpers.deleteImageFile(painting.getImageURL());
+            String imageUrl = paintingHelpers.saveImage(imageFile);
+            painting.setImageURL(imageUrl);
+            log.info("Painting image updated: {}", imageUrl);
+        }
+
+        painting.setTitle(paintingRequest.title());
+        painting.setDescription(paintingRequest.description());
+        painting.setPrice(paintingRequest.price());
+        painting.setAuthor(paintingRequest.author());
+        painting.setReleaseDate(paintingRequest.releaseDate());
+
+        paintingRepository.save(painting);
+        log.info("Painting updated: {}", painting.getId());
+    }
 
 
     public Page<PaintingResponse> searchPaintingsViaElastic(String searchText, int page, int size) {
@@ -119,7 +142,8 @@ public class PaintingService {
                         painting.getAuthor(),
                         painting.getReleaseDate(),
                         painting.getPrice(),
-                        painting.getImageURL()
+                        painting.getImageURL(),
+                        painting.getUserId()
                 ))
                 .sorted(comparingInt(painting -> idsMap.get(painting.id())))
                 .toList();
@@ -127,33 +151,24 @@ public class PaintingService {
         return new PageImpl<>(paintingsFromDb, pageable, searchResults.getTotalElements());
     }
 
-    public String saveImage(MultipartFile file) throws IOException {
-        String fileName = file.getOriginalFilename();
 
-        Path uploadPath = Paths.get(uploadDirectory);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-            log.info("Directories created: {}", uploadPath);
-        }
-
-        Path filePath = uploadPath.resolve(fileName);
-        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        log.info("Image saved: {}", fileName);
-        return baseUrl + "images/" + fileName;
+    public Page<PaintingResponse> getUserPaintings(Long userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        List<PaintingResponse> userPaintingsFromDb = paintingRepository.findAllByUserId(userId)
+                .stream()
+                .map(painting -> new PaintingResponse(
+                                painting.getId(),
+                                painting.getTitle(),
+                                painting.getDescription(),
+                                painting.getAuthor(),
+                                painting.getReleaseDate(),
+                                painting.getPrice(),
+                                painting.getImageURL(),
+                                painting.getUserId()
+                        )
+                ).toList();
+        return new PageImpl<>(userPaintingsFromDb, pageable, userPaintingsFromDb.size());
     }
-
-    private void deleteImageFile(String imageUrl) {
-        try {
-            Path imagePath = Paths.get(uploadDirectory, extractFilenameFromUrl(imageUrl));
-            Files.deleteIfExists(imagePath);
-        } catch (IOException e) {
-            log.error("Failed to delete image file: {}", imageUrl, e);
-            throw new RuntimeException("Error deleting image file: " + imageUrl, e);
-        }
-    }
-
-    private String extractFilenameFromUrl(String url) {
-        return url.substring(url.lastIndexOf('/') + 1);
-    }
-
 }
+
+

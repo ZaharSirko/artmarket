@@ -1,0 +1,83 @@
+{
+  "id": "artmarket",
+  "realm": "artmarket",
+  "enabled": true,
+  "displayName": "ArtMarket Realm",
+  "roles": {
+    "realm": [
+      {
+        "name": "ARTIST"
+      },
+      {
+        "name": "COLLECTOR"
+      },
+      {
+        "name": "GALLERY_OWNER"
+      },
+      {
+        "name": "ADMIN"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "user-service",
+      "publicClient": true,
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true
+    },
+    {
+      "clientId": "painting-service",
+      "publicClient": true,
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@artmarket.com",
+      "enabled": true,
+      "email": "admin@artmarket.com",
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN"
+      ],
+      "attributes": {
+        "keycloakId": [
+          "demo-keycloak-id"
+        ],
+        "type": [
+          "ADMIN"
+        ]
+      }
+    }
+  ],
+  "smtpServer": {},
+  "eventsEnabled": true,
+  "adminEventsEnabled": true,
+  "internationalizationEnabled": true
+}

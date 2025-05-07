@@ -3,7 +3,7 @@
   <component name="CompilerConfiguration">
     <annotationProcessing>
       <profile default="true" name="Default" enabled="true">
-        <processorPath useClasspath="false">
+        <processorPath>
           <entry name="$PROJECT_DIR$" />
         </processorPath>
       </profile>

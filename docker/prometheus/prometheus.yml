@@ -7,9 +7,19 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['host.docker.internal:9090']
+        labels:
+          application: 'My API-GateWay Service Application'
+
   - job_name: 'painting-service'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['host.docker.internal:8080'] ## only for demo purposes don't use host.docker.internal in production
         labels:
           application: 'My Painting Service Application'
+
+  - job_name: 'user-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: [ 'host.docker.internal:8081' ] ## only for demo purposes don't use host.docker.internal in production
+        labels:
+          application: 'My User Service Application'

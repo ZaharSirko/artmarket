@@ -2,18 +2,35 @@ version: '3.8'
 
 services:
   # PostgreSQL для painting-service
-  postgres:
+  postgres-painting:
     image: postgres:latest
-    container_name: postgres
+    container_name: postgres-painting
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: boomlog123321
       POSTGRES_DB: painting_db
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./postgres_data/painting:/var/lib/postgresql/data
       - ./docker/pgsql/painting_init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5433:5432"
+    networks:
+      - artmarket_network
+
+  # PostgreSQL для user-service
+  postgres-keycloak:
+    image: postgres:latest
+    container_name: postgres-keycloak
+    environment:
+      POSTGRES_DB: keycloak_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: boomlog123321
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./postgres_data/keycloak:/var/lib/postgresql/data
+      - ./docker/pgsql/keycloak_init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - artmarket_network
 
@@ -33,37 +50,66 @@ services:
       - artmarket_network
 
   # Опціонально: Kibana для візуалізації Elasticsearch (якщо потрібно)
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.12.0
-    container_name: kibana
-    depends_on:
-      - elasticsearch
-    ports:
-      - "5601:5601"
-    environment:
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-    networks:
-      - artmarket_network
+#  kibana:
+#    image: docker.elastic.co/kibana/kibana:8.12.0
+#    container_name: kibana
+#    depends_on:
+#      - elasticsearch
+#    ports:
+#      - "5601:5601"
+#    environment:
+#      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+#    networks:
+#      - artmarket_network
 
-  prometheus:
-    image: prom/prometheus
-    container_name: prometheus
-    volumes:
-      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    ports:
-      - "9090:9090"
-    networks:
-      - artmarket_network
+  # keycloak для user-service
+  keycloak:
+   container_name: keycloak
+   image: quay.io/keycloak/keycloak:24.0.1
+   command: [ "start-dev", "--import-realm" ]
+   environment:
+    KC_HOSTNAME: localhost
+    KC_HOSTNAME_PORT: 8181
+    KC_HOSTNAME_STRICT_BACKCHANNEL: false
+    KC_HTTP_ENABLED: true
+    KC_HOSTNAME_STRICT_HTTPS: false
+    KC_HEALTH_ENABLED: true
+    KEYCLOAK_ADMIN: admin
+    KEYCLOAK_ADMIN_PASSWORD: admin
+    KC_DB: postgres
+    KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak_db
+    KC_DB_USERNAME: postgres
+    KC_DB_PASSWORD: boomlog123321
+   ports:
+    - "8181:8080"
+   volumes:
+     - ./docker/keycloak/realms/:/opt/keycloak/data/import/
+   depends_on:
+    - postgres-keycloak
+   networks:
+     - artmarket_network
 
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-    networks:
-      - artmarket_network
+  # Логи
+#  prometheus:
+#    image: prom/prometheus
+#    container_name: prometheus
+#    volumes:
+#      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+#    ports:
+#      - "9090:9090"
+#    networks:
+#      - artmarket_network
+#
+#  # Візуалізація логів
+#  grafana:
+#    image: grafana/grafana
+#    container_name: grafana
+#    ports:
+#      - "3000:3000"
+#    volumes:
+#      - grafana_data:/var/lib/grafana
+#    networks:
+#      - artmarket_network
 
 # Мережа для зв'язку між сервісами
 networks:

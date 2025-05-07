@@ -36,6 +36,8 @@ public class Painting {
     BigDecimal price;
     @NonNull
     String imageURL;
+    @NonNull
+    Long userId;
    @Builder.Default
    Instant createdAt = Instant.now();
 }
