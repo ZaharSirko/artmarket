@@ -1,15 +1,14 @@
 package com.artmarket.user_service.DTO;
 
-import com.artmarket.user_service.model.UserType;
-import java.time.Instant;
+import java.util.List;
 
 
 public record UserResponse(
-        Long id,
         String keycloakId,
+        String username,
         String email,
         String firstName,
         String lastName,
-        UserType type,
-        Instant createdAt
+        List<String> roles,
+        Long createdAt
 ) {}

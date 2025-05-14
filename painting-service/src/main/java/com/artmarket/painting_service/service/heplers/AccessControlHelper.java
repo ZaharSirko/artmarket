@@ -7,10 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.AccessDeniedException;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Component
@@ -25,46 +28,66 @@ public class AccessControlHelper {
             UserType.ADMIN
     );
 
-    private String getBearerToken() throws AccessDeniedException {
+    public String getBearerToken() throws AccessDeniedException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
-            throw new AccessDeniedException("No authentication found in security context.");
+        if (authentication instanceof JwtAuthenticationToken jwtAuth) {
+            return "Bearer " + jwtAuth.getToken().getTokenValue();
         }
-        return "Bearer " + authentication.getCredentials().toString();
+        throw new AccessDeniedException("Cannot resolve token");
     }
 
-    public Long getCurrentUserId() {
+
+    public String getCurrentUserId() {
         Jwt jwt = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return jwt.getClaim("sub");
     }
 
     public void assertCanCreatePainting() throws AccessDeniedException {
         UserResponse currentUser = userClient.getCurrentUser(getBearerToken());
-        if (!PAINTING_CREATORS.contains(currentUser.type())) {
+
+        List<UserType> userTypes = getUserTypes(currentUser);
+
+        boolean hasPermission = userTypes.stream()
+                .anyMatch(PAINTING_CREATORS::contains);
+
+        if (!hasPermission) {
             throw new AccessDeniedException("You do not have permission to create paintings.");
         }
     }
 
+    public void checkDeletePermission(String paintingOwnerId) throws AccessDeniedException {
+        assertOwnerOrAdmin(paintingOwnerId, "delete");
+    }
 
-    public void checkDeletePermission(Long paintingOwnerId) throws AccessDeniedException {
+    public void checkUpdatePermission(String paintingOwnerId) throws AccessDeniedException {
+        assertOwnerOrAdmin(paintingOwnerId, "update");
+    }
+
+    private void assertOwnerOrAdmin(String paintingOwnerId, String action) throws AccessDeniedException {
         UserResponse currentUser = userClient.getCurrentUser(getBearerToken());
 
-        boolean isOwner = currentUser.id().equals(paintingOwnerId);
-        boolean isAdmin = currentUser.type() == UserType.ADMIN;
+        boolean isOwner = currentUser.keycloakId().equalsIgnoreCase(paintingOwnerId);
 
-        if (!isOwner && !isAdmin) {
-            throw new AccessDeniedException("You are not allowed to delete this painting.");
+        List<UserType> userTypes = getUserTypes(currentUser);
+
+        boolean hasPermission = userTypes.stream().toList().contains(UserType.ADMIN);
+
+        if (!isOwner && !hasPermission) {
+            throw new AccessDeniedException("You are not allowed to " + action + " this painting.");
         }
     }
 
-    public void checkUpdatePermission(Long paintingOwnerId) throws AccessDeniedException {
-        UserResponse currentUser = userClient.getCurrentUser(getBearerToken());
-
-        boolean isOwner = currentUser.id().equals(paintingOwnerId);
-        boolean isAdmin = currentUser.type() == UserType.ADMIN;
-
-        if (!isOwner && !isAdmin) {
-            throw new AccessDeniedException("You are not allowed to update this painting.");
-        }
+    private static List<UserType> getUserTypes(UserResponse currentUser) {
+        return currentUser.roles().stream()
+                .map(role -> {
+                    try {
+                        return UserType.valueOf(role);
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .toList();
     }
+
 }

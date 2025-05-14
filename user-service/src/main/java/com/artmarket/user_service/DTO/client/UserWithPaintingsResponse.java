@@ -1,17 +1,16 @@
 package com.artmarket.user_service.DTO.client;
 
-import com.artmarket.user_service.model.UserType;
+import org.springframework.data.domain.Page;
 
-import java.time.Instant;
 import java.util.List;
 
 public record UserWithPaintingsResponse(
-        Long id,
         String keycloakId,
+        String username,
         String email,
         String firstName,
         String lastName,
-        UserType type,
-        Instant createdAt,
-        List<PaintingResponse> paintings
+        List<String> roles,
+        Long createdAt,
+        PageResponse paintings
 ) {}

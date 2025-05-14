@@ -58,7 +58,7 @@ public class PaintingService {
         try {
             accessControlHelper.assertCanCreatePainting();
 
-            Long userId = accessControlHelper.getCurrentUserId();
+            String userId = accessControlHelper.getCurrentUserId();
 
             String imageUrl = paintingHelpers.saveImage(imageFile);
             log.info("Image saved: {}", imageUrl);
@@ -152,7 +152,7 @@ public class PaintingService {
     }
 
 
-    public Page<PaintingResponse> getUserPaintings(Long userId, int page, int size) {
+    public Page<PaintingResponse> getUserPaintings(String userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         List<PaintingResponse> userPaintingsFromDb = paintingRepository.findAllByUserId(userId)
                 .stream()

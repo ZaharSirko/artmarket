@@ -37,7 +37,7 @@ public class Painting {
     @NonNull
     String imageURL;
     @NonNull
-    Long userId;
+    String userId;
    @Builder.Default
    Instant createdAt = Instant.now();
 }

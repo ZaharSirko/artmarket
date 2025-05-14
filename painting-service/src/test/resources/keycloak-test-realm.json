@@ -1,0 +1,58 @@
+{
+  "id": "artmarket",
+  "realm": "artmarket",
+  "enabled": true,
+  "displayName": "ArtMarket Test Realm",
+  "roles": {
+    "realm": [
+      {
+        "name": "ARTIST"
+      },
+      {
+        "name": "COLLECTOR"
+      },
+      {
+        "name": "GALLERY_OWNER"
+      },
+      {
+        "name": "ADMIN"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "painting-service",
+      "secret": "painting-service-secret",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "*"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "artist@artmarket.com",
+      "enabled": true,
+      "email": "artist@artmarket.com",
+      "firstName": "Artist",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "artist",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ARTIST"
+      ]
+    }
+  ]
+}

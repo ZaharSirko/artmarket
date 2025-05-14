@@ -1,6 +1,7 @@
 package com.artmarket.api_gateway.routes;
 
 
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.cloud.gateway.server.mvc.filter.CircuitBreakerFilterFunctions;
 import org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions;
 import org.springframework.context.annotation.Bean;

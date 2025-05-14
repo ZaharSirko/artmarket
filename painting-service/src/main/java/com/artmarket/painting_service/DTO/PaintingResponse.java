@@ -17,5 +17,5 @@ public record PaintingResponse(
         @DateTimeFormat(pattern = "yyyy-MM-dd")  Date releaseDate,
         BigDecimal price,
         String imageULR,
-        Long userId) implements Serializable {
+        String userId) implements Serializable {
 }

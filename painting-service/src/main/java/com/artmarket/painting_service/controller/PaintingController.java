@@ -19,8 +19,7 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -105,14 +104,22 @@ public class PaintingController {
 
     @GetMapping(SECURE)
     public ResponseEntity<String> secure(@AuthenticationPrincipal Jwt jwt) {
-        String userId = jwt.getSubject(); // Keycloak 'sub'
-        List<String> roles = jwt.getClaimAsStringList("roles");
+        String userId = jwt.getSubject();
+
+        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+        List<String> roles = Collections.emptyList();
+
+        if (realmAccess != null && realmAccess.containsKey("roles")) {
+            roles = (List<String>) realmAccess.get("roles");
+        }
+
         return ResponseEntity.ok("Hello " + userId + ", roles: " + roles);
     }
 
+
     @GetMapping(BY_USER_ID)
     public ResponseEntity<Page<PaintingResponse>> getPaintingsByUser(
-            @PathVariable Long userId,
+            @PathVariable String userId,
             @RequestParam(name = "page", defaultValue = "0") int page, @RequestParam(name = "size", defaultValue = "10") int size) {
         var allUserPaintings = paintingService.getUserPaintings(userId,page, size);
         return new ResponseEntity<>(allUserPaintings, HttpStatus.OK);
