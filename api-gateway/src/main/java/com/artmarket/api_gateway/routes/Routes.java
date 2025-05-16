@@ -1,7 +1,5 @@
 package com.artmarket.api_gateway.routes;
 
-
-import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.cloud.gateway.server.mvc.filter.CircuitBreakerFilterFunctions;
 import org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions;
 import org.springframework.context.annotation.Bean;
@@ -64,6 +62,29 @@ public class Routes {
                     .filter(setPath("/v3/api-docs"))
                     .build();
         }
+
+    @Bean
+    public RouterFunction<ServerResponse> orderServiceRoutes() {
+        return route("user_service")
+                .route(RequestPredicates.path("/users/**"),
+                        HandlerFunctions.http("http://localhost:8082")) // порт user-service
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker(
+                        "orderServiceCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> orderServiceSwaggerRoute() {
+        return route("user_service_swagger")
+                .route(RequestPredicates.path("/aggregate/order-service/v3/api-docs"),
+                        HandlerFunctions.http("http://localhost:8082"))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker(
+                        "orderServiceSwaggerCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .filter(setPath("/v3/api-docs"))
+                .build();
+    }
 
 
     @Bean

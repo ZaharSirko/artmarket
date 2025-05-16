@@ -169,6 +169,36 @@ public class PaintingService {
                 ).toList();
         return new PageImpl<>(userPaintingsFromDb, pageable, userPaintingsFromDb.size());
     }
+
+
+    public List<PaintingResponse> getAllPaintingsById(List<Long> paintingIds) {
+     return  paintingRepository.findAllById(paintingIds).stream()
+                .map(painting -> new PaintingResponse(
+                        painting.getId(),
+                        painting.getTitle(),
+                        painting.getDescription(),
+                        painting.getAuthor(),
+                        painting.getReleaseDate(),
+                        painting.getPrice(),
+                        painting.getImageURL(),
+                        painting.getUserId()
+                ))
+                .toList();
+    }
+
+    public PaintingResponse getPaintingById(Long paintingId) {
+        return paintingRepository.findById(paintingId)
+                .map(painting -> new PaintingResponse(
+                        painting.getId(),
+                        painting.getTitle(),
+                        painting.getDescription(),
+                        painting.getAuthor(),
+                        painting.getReleaseDate(),
+                        painting.getPrice(),
+                        painting.getImageURL(),
+                        painting.getUserId()
+                )).orElseThrow(() -> new IllegalArgumentException("Painting not found: "+ paintingId));
+    }
 }
 
 

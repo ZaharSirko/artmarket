@@ -17,6 +17,7 @@ services:
     networks:
       - artmarket_network
 
+
   # PostgreSQL для user-service
   postgres-keycloak:
     image: postgres:latest
@@ -31,6 +32,23 @@ services:
     volumes:
       - ./postgres_data/keycloak:/var/lib/postgresql/data
       - ./docker/pgsql/keycloak_init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - artmarket_network
+
+
+  # PostgreSQL для order-service
+  postgres-order:
+    image: postgres:latest
+    container_name: postgres-order
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: boomlog123321
+      POSTGRES_DB: order_db
+    volumes:
+      - ./postgres_data/order:/var/lib/postgresql/data
+      - ./docker/pgsql/order_init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5435:5432"
     networks:
       - artmarket_network
 

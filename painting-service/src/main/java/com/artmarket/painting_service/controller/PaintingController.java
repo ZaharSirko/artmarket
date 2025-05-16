@@ -33,6 +33,7 @@ public class PaintingController {
     private static final String UPDATE_BY_ID = "/update/{id}";
     private static final String SECURE = "/secure";
     private static final String BY_USER_ID = "/user/{userId}";
+    private static final String BY_IDS = "by-ids";
     @Value("${upload.directory}")
     private String uploadDirectory;
 
@@ -96,6 +97,13 @@ public class PaintingController {
     }
 
 
+    @GetMapping(BY_ID)
+    public ResponseEntity<PaintingResponse> getPainting(@PathVariable Long id) {
+        var painting = paintingService.getPaintingById(id);
+        return ResponseEntity.ok(painting);
+    }
+
+
     @DeleteMapping(BY_ID)
     public ResponseEntity<String> deletePainting(@PathVariable Long id) throws AccessDeniedException {
         paintingService.deletePainting(id);
@@ -123,6 +131,11 @@ public class PaintingController {
             @RequestParam(name = "page", defaultValue = "0") int page, @RequestParam(name = "size", defaultValue = "10") int size) {
         var allUserPaintings = paintingService.getUserPaintings(userId,page, size);
         return new ResponseEntity<>(allUserPaintings, HttpStatus.OK);
+    }
+
+    @GetMapping(BY_IDS)
+    public List<PaintingResponse> getByIds(@RequestParam List<Long> ids) {
+        return paintingService.getAllPaintingsById(ids);
     }
 
 }
