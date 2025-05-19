@@ -18,7 +18,8 @@ import java.util.List;
 public class OrderController {
     private static final String BY_ID = "/{id}";
     private static final String MY_ORDER = "/my";
-    private static final String BY_UPDATE_ORDER_ID = "/{orderId}/add-painting";
+    private static final String UPDATE_BY_ORDER_ID = "/{orderId}/add-painting";
+    private static final String DELETE_BY_ORDER_ID = "/{orderId}/delete-painting";
     private final OrderService orderService;
 
     @GetMapping(BY_ID)
@@ -28,25 +29,31 @@ public class OrderController {
     }
 
     @PostMapping()
-    public ResponseEntity<OrderResponse> createOrder(@RequestBody OrderRequest orderRequest) {
-        var response = orderService.createOrder(orderRequest);
+    public ResponseEntity<OrderResponse> createOrder(@RequestBody OrderRequest orderRequest,
+                                                     @AuthenticationPrincipal Jwt jwt) {
+        var response = orderService.createOrder(orderRequest, jwt.getTokenValue());
         return ResponseEntity.ok(response);
     }
 
     @GetMapping(MY_ORDER)
     public ResponseEntity<List<OrderResponse>> getMyOrders(
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestHeader("Authorization") String authHeader) {
-
-        List<OrderResponse> orders = orderService.getOrdersForCurrentUser(authHeader);
+            @AuthenticationPrincipal Jwt jwt) {
+        List<OrderResponse> orders = orderService.getOrdersForCurrentUser(jwt.getTokenValue());
         return ResponseEntity.ok(orders);
     }
 
-    @PutMapping(BY_UPDATE_ORDER_ID)
-    public ResponseEntity<OrderResponse> addPainting(
+    @PutMapping(UPDATE_BY_ORDER_ID)
+    public ResponseEntity<OrderResponse> addPaintingFromOrder(
             @PathVariable Long orderId,
             @RequestBody OrderItemRequest request) {
         return ResponseEntity.ok(orderService.addPaintingToOrder(orderId, request));
+    }
+
+    @PutMapping(DELETE_BY_ORDER_ID)
+    public ResponseEntity<OrderResponse> removePaintingFromOrder(
+            @PathVariable Long orderId,
+            @RequestBody OrderItemRequest request) {
+        return ResponseEntity.ok(orderService.removePaintingFromOrder(orderId, request));
     }
 
 }

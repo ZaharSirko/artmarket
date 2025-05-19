@@ -25,12 +25,13 @@ import java.util.*;
 @RequiredArgsConstructor
 @RequestMapping("/paintings")
 public class PaintingController {
-    private static  final String HOMEPAGE = "/";
+    private static  final String HOMEPAGE = "";
     private  static final String SEARCH = "/search";
     private static final String CREATE_PAINTING = "/create";
     private static final String IMAGES = "/images/{filename:.+}";
     private static final String BY_ID = "/{id}";
-    private static final String UPDATE_BY_ID = "/update/{id}";
+    private static final String UPDATE_BY_ID = "/{id}/update";
+    private static final String DELETE_BY_ID = "/{id}/delete";
     private static final String SECURE = "/secure";
     private static final String BY_USER_ID = "/user/{userId}";
     private static final String BY_IDS = "by-ids";
@@ -104,7 +105,7 @@ public class PaintingController {
     }
 
 
-    @DeleteMapping(BY_ID)
+    @DeleteMapping(DELETE_BY_ID)
     public ResponseEntity<String> deletePainting(@PathVariable Long id) throws AccessDeniedException {
         paintingService.deletePainting(id);
         return ResponseEntity.ok("Painting deleted successfully");

@@ -31,7 +31,7 @@ public class PaintingHelpers {
 
         Path filePath = uploadPath.resolve(fileName);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        return baseUrl + "images/" + fileName;
+        return baseUrl + "/images/" + fileName;
     }
 
     public void deleteImageFile(String imageUrl) {

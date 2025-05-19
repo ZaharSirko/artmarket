@@ -172,7 +172,7 @@ public class PaintingService {
 
 
     public List<PaintingResponse> getAllPaintingsById(List<Long> paintingIds) {
-     return  paintingRepository.findAllById(paintingIds).stream()
+     return  paintingRepository.findByIdIn(paintingIds).stream()
                 .map(painting -> new PaintingResponse(
                         painting.getId(),
                         painting.getTitle(),

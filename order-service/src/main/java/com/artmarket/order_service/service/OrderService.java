@@ -5,42 +5,34 @@ import com.artmarket.order_service.DTO.OrderRequest;
 import com.artmarket.order_service.DTO.OrderResponse;
 import com.artmarket.order_service.DTO.ShippingResponse;
 import com.artmarket.order_service.DTO.client.PaintingResponse;
-import com.artmarket.order_service.DTO.client.UserResponse;
-import com.artmarket.order_service.client.PaintingClient;
-import com.artmarket.order_service.client.UserClient;
 import com.artmarket.order_service.model.Order;
 import com.artmarket.order_service.model.OrderItem;
 import com.artmarket.order_service.model.ShippingInfo;
 import com.artmarket.order_service.model.enums.OrderStatus;
 import com.artmarket.order_service.model.enums.ShippingStatus;
 import com.artmarket.order_service.repository.OrderRepository;
+import com.artmarket.order_service.service.heplers.OrderServiceHelper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
     private final OrderRepository orderRepository;
-    private final UserClient userClient;
-    private final PaintingClient paintingClient;
+    private final OrderServiceHelper helper;
 
     @Transactional
-    public OrderResponse createOrder(OrderRequest request) {
-
+    public OrderResponse createOrder(OrderRequest request,String bearerToken) {
         List<Long> paintingIds = request.items().stream()
                 .map(OrderItemRequest::paintingId)
                 .toList();
 
-        List<PaintingResponse> paintingResponse = paintingClient.getPaintingsByIds(paintingIds);
-
-        BigDecimal totalPrice = paintingResponse.stream()
-                .map(PaintingResponse::price)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<PaintingResponse> paintings = helper.getPaintingsByIds(paintingIds);
+        BigDecimal totalPrice = helper.calculateTotalPrice(paintings);
 
         ShippingInfo shippingInfo = ShippingInfo.builder()
                 .recipientName(request.shipping().recipientName())
@@ -52,51 +44,50 @@ public class OrderService {
                 .build();
 
         Order order = Order.builder()
-                .userId(request.userId())
+                .userId(helper.getCurrentUser(bearerToken).keycloakId())
                 .status(OrderStatus.NEW)
                 .totalPrice(totalPrice)
                 .shippingInfo(shippingInfo)
                 .build();
 
-        List<OrderItem> items = paintingResponse.stream()
-                .map(itemDto -> OrderItem.builder()
-                        .paintingId(itemDto.id())
-                        .price(itemDto.price())
-                        .order(order)
-                        .build()
-                ).collect(Collectors.toList());
+        List<OrderItem> items = paintings.stream()
+                .map(painting -> helper.buildOrderItem(painting, order))
+                .toList();
 
         order.setItems(items);
 
         Order savedOrder = orderRepository.save(order);
-
 
         return mapToResponse(savedOrder);
     }
 
     @Transactional
     public OrderResponse addPaintingToOrder(Long orderId, OrderItemRequest request) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        Order order = helper.getOrderOrThrow(orderId);
+        helper.validateOrderIsNew(order);
 
-        if (order.getStatus() != OrderStatus.NEW) {
-            throw new IllegalStateException("Cannot update order with status: " + order.getStatus());
-        }
-
-        PaintingResponse painting = paintingClient.getPaintingsByIds(List.of(request.paintingId()))
-                .stream().findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Painting not found"));
-
-
-        OrderItem item = OrderItem.builder()
-                .paintingId(painting.id())
-                .price(painting.price())
-                .order(order)
-                .build();
+        PaintingResponse painting = helper.getPaintingById(request.paintingId());
+        OrderItem item = helper.buildOrderItem(painting, order);
 
         order.getItems().add(item);
-
         order.setTotalPrice(order.getTotalPrice().add(painting.price()));
+        orderRepository.save(order);
+
+        return mapToResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse removePaintingFromOrder(Long orderId, OrderItemRequest request) {
+        Order order = helper.getOrderOrThrow(orderId);
+        helper.validateOrderIsNew(order);
+
+        OrderItem itemToRemove = order.getItems().stream()
+                .filter(item -> item.getPaintingId().equals(request.paintingId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Painting not found in order"));
+
+        order.getItems().remove(itemToRemove);
+        order.setTotalPrice(order.getTotalPrice().subtract(itemToRemove.getPrice()));
 
         orderRepository.save(order);
 
@@ -104,30 +95,24 @@ public class OrderService {
     }
 
 
-
     public OrderResponse getOrderById(Long id) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + id));
-
+        Order order = helper.getOrderOrThrow(id);
         return mapToResponse(order);
     }
 
     public List<OrderResponse> getOrdersForCurrentUser(String bearerToken) {
-        UserResponse user = userClient.getCurrentUser(bearerToken);
-        List<Order> orders = orderRepository.findAllByUserId(user.keycloakId());
-
-        return orders.stream()
+        String userId = helper.getCurrentUser(bearerToken).keycloakId();
+        return orderRepository.findAllByUserId(userId).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
-
 
     public OrderResponse mapToResponse(Order order) {
         List<Long> paintingIds = order.getItems().stream()
                 .map(OrderItem::getPaintingId)
                 .toList();
 
-        List<PaintingResponse> paintingResponse = paintingClient.getPaintingsByIds(paintingIds);
+        List<PaintingResponse> paintings = helper.getPaintingsByIds(paintingIds);
 
         ShippingResponse shipping = new ShippingResponse(
                 order.getShippingInfo().getShippingProvider(),
@@ -145,7 +130,7 @@ public class OrderService {
                 order.getStatus(),
                 order.getTotalPrice(),
                 order.getCreatedAt(),
-                paintingResponse,
+                paintings,
                 shipping
         );
     }

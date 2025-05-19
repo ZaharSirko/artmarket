@@ -16,7 +16,7 @@ import java.util.List;
 public interface PaintingClient {
     Logger log = LoggerFactory.getLogger(PaintingClient.class);
 
-    @GetExchange("/paintings/by-ids}")
+    @GetExchange("/paintings/by-ids")
     @CircuitBreaker(name = "paintingService", fallbackMethod = "fallbackPaintingsByIds")
     @Retry(name = "paintingService")
     List<PaintingResponse> getPaintingsByIds(@RequestParam List<Long> ids);

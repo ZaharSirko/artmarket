@@ -41,7 +41,7 @@ public class Order {
     @Builder.Default
     private Instant createdAt = Instant.now();
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
