@@ -44,7 +44,7 @@ public class Routes {
         public RouterFunction<ServerResponse> userServiceRoutes() {
             return route("user_service")
                     .route(RequestPredicates.path("/users/**"),
-                            HandlerFunctions.http("http://localhost:8081")) // порт user-service
+                            HandlerFunctions.http("http://localhost:8081"))
                     .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                             "userServiceCircuitBreaker",
                             URI.create("forward:/fallbackRoute")))
@@ -65,9 +65,9 @@ public class Routes {
 
     @Bean
     public RouterFunction<ServerResponse> orderServiceRoutes() {
-        return route("user_service")
-                .route(RequestPredicates.path("/users/**"),
-                        HandlerFunctions.http("http://localhost:8082")) // порт user-service
+        return route("order_service")
+                .route(RequestPredicates.path("/orders/**"),
+                        HandlerFunctions.http("http://localhost:8082"))
                 .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                         "orderServiceCircuitBreaker",
                         URI.create("forward:/fallbackRoute")))
@@ -76,9 +76,32 @@ public class Routes {
 
     @Bean
     public RouterFunction<ServerResponse> orderServiceSwaggerRoute() {
-        return route("user_service_swagger")
+        return route("order_service_swagger")
                 .route(RequestPredicates.path("/aggregate/order-service/v3/api-docs"),
                         HandlerFunctions.http("http://localhost:8082"))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker(
+                        "orderServiceSwaggerCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .filter(setPath("/v3/api-docs"))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> logisticServiceRoutes() {
+        return route("logistic_service")
+                .route(RequestPredicates.path("/logistics/**"),
+                        HandlerFunctions.http("http://localhost:8083"))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker(
+                        "orderServiceCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> logisticServiceSwaggerRoute() {
+        return route("logistic_service_swagger")
+                .route(RequestPredicates.path("/aggregate/logistic-service/v3/api-docs"),
+                        HandlerFunctions.http("http://localhost:8083"))
                 .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                         "orderServiceSwaggerCircuitBreaker",
                         URI.create("forward:/fallbackRoute")))
