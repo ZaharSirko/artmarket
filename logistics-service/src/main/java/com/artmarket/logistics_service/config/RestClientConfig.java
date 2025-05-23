@@ -12,6 +12,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -27,9 +29,6 @@ public class RestClientConfig {
     @Value("${novaposhta.api.url}")
     private String novaPoshtaUrl;
 
-    @Value("${novaposhta.api.key}")
-    private String novaposhtaApiKey;
-
     private final ObservationRegistry observationRegistry;
 
     @Bean
@@ -38,6 +37,15 @@ public class RestClientConfig {
                 .baseUrl(orderServiceUrl)
                 .requestFactory(getClientHttpRequestFactory())
                 .observationRegistry(observationRegistry)
+                .requestInterceptor((request, body, execution) -> {
+                    String token = ((JwtAuthenticationToken) SecurityContextHolder
+                            .getContext()
+                            .getAuthentication())
+                            .getToken()
+                            .getTokenValue();
+                    request.getHeaders().add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+                    return execution.execute(request, body);
+                })
                 .build();
 
         var adapter = RestClientAdapter.create(restClient);

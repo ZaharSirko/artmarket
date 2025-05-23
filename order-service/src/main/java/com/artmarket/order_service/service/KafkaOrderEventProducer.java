@@ -19,7 +19,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class KafkaOrderEventProducer {
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate<String, OrderEvent> kafkaTemplate;
     private final KafkaTopics kafkaTopics;
 
     public void sendOrderCreatedEvent(Order order) {
@@ -77,7 +77,7 @@ public class KafkaOrderEventProducer {
                 UUID.randomUUID().toString();
 
         try {
-            kafkaTemplate.send(topic, key, value)
+            kafkaTemplate.send(topic, key, (OrderEvent) value)
                     .whenComplete((result, ex) -> {
                         if (ex != null) {
                             log.error("Failed to send record to {}: {}", topic, ex.getMessage());

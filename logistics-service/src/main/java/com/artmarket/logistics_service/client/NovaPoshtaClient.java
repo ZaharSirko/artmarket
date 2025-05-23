@@ -13,10 +13,10 @@ import org.springframework.web.service.annotation.PostExchange;
 public interface NovaPoshtaClient {
     Logger log = LoggerFactory.getLogger(NovaPoshtaClient.class);
 
-    @PostExchange
+    @PostExchange("/")
     @CircuitBreaker(name = "novaPoshtaService", fallbackMethod = "fallbackNovaPoshta")
     @Retry(name = "novaPoshtaService")
-    NovaPoshtaResponse createDelivery(@RequestBody NovaPoshtaRequest request);
+    NovaPoshtaResponse post(@RequestBody NovaPoshtaRequest request);
 
     default NovaPoshtaResponse fallbackNovaPoshta(NovaPoshtaRequest request, Throwable throwable) {
         log.error("Nova Poshta service unavailable: {}", throwable.getMessage());

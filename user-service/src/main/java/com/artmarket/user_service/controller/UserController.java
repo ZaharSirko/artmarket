@@ -4,16 +4,13 @@ package com.artmarket.user_service.controller;
 import com.artmarket.user_service.DTO.UserRegistrationRequest;
 import com.artmarket.user_service.DTO.UserResponse;
 import com.artmarket.user_service.DTO.client.PageResponse;
-import com.artmarket.user_service.DTO.client.PaintingResponse;
 import com.artmarket.user_service.service.KeycloakUserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.List;
 
 @RequiredArgsConstructor
 @RestController()

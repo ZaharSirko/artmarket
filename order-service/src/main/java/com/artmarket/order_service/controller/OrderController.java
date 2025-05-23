@@ -18,29 +18,35 @@ import java.util.List;
 @RequestMapping("/orders")
 @RequiredArgsConstructor
 public class OrderController {
+    private static final String ROOT = "";
+    private static final String ID_PATH = "/{id}";
+    private static final String MY_ORDERS = "/my";
+    private static final String ORDER_ITEMS = "/{orderId}/items";
+    private static final String ORDER_SHIPPING = "/{orderId}/shipping";
+
     private final OrderService orderService;
 
-    @GetMapping("/{id}")
+    @GetMapping(ID_PATH)
     public ResponseEntity<OrderResponse> getOrder(
             @PathVariable Long id,
             @AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(orderService.getOrderById(id, jwt.getTokenValue()));
     }
 
-    @PostMapping
+    @PostMapping(ROOT)
     public ResponseEntity<OrderResponse> createOrder(
             @Valid @RequestBody OrderRequest orderRequest,
             @AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(orderService.createOrder(orderRequest, jwt.getTokenValue()));
     }
 
-    @GetMapping("/my")
+    @GetMapping(MY_ORDERS)
     public ResponseEntity<List<OrderResponse>> getMyOrders(
             @AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(orderService.getOrdersForCurrentUser(jwt.getTokenValue()));
     }
 
-    @PutMapping("/{orderId}/items")
+    @PutMapping(ORDER_ITEMS)
     public ResponseEntity<OrderResponse> addPaintingToOrder(
             @PathVariable Long orderId,
             @Valid @RequestBody OrderItemRequest request,
@@ -49,7 +55,7 @@ public class OrderController {
                 orderService.addPaintingToOrder(orderId, request, jwt.getTokenValue()));
     }
 
-    @DeleteMapping("/{orderId}/items")
+    @DeleteMapping(ORDER_ITEMS)
     public ResponseEntity<OrderResponse> removePaintingFromOrder(
             @PathVariable Long orderId,
             @Valid @RequestBody OrderItemRequest request,
@@ -58,7 +64,7 @@ public class OrderController {
                 orderService.removePaintingFromOrder(orderId, request, jwt.getTokenValue()));
     }
 
-    @PatchMapping("/{orderId}/shipping")
+    @PatchMapping(ORDER_SHIPPING)
     public ResponseEntity<OrderResponse> updateShipping(
             @PathVariable Long orderId,
             @Valid @RequestBody UpdateShippingRequest request,

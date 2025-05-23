@@ -1,7 +1,7 @@
 package com.artmarket.logistics_service.DTO;
 
-public record CreateTTNResponse(
+public record DocumentResponse(
         String Ref,
-        String CostOnSite,
+        String IntDocNumber,
         String EstimatedDeliveryDate
 ) {}

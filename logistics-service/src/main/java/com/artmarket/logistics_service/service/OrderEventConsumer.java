@@ -10,28 +10,28 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Service
-@Slf4j
-@RequiredArgsConstructor
-public class OrderEventConsumer {
-    private final NovaPoshtaDeliveryService deliveryService;
-    private final KafkaDeliveryEventProducer eventProducer;
-
-    @KafkaListener(topics = "${kafka.topics.order-created}")
-    public void handleOrderCreated(OrderCreatedEvent event) {
-        log.info("Received OrderCreatedEvent for order {}", event.orderId());
-        try {
-            deliveryService.processOrderDelivery(event.orderId());
-            log.info("Successfully processed delivery for order {}", event.orderId());
-        } catch (Exception e) {
-            log.error("Failed to process delivery for order {}: {}", event.orderId(), e.getMessage());
-            eventProducer.send(
-                    new DeliveryErrorEvent(
-                            event.orderId(),
-                            "DELIVERY_PROCESSING_FAILED: " + e.getMessage(),
-                            LocalDateTime.now()
-                    )
-            );
-        }
-    }
-}
+//@Service
+//@Slf4j
+//@RequiredArgsConstructor
+//public class OrderEventConsumer {
+//    private final NovaPoshtaService deliveryService;
+//    private final KafkaDeliveryEventProducer eventProducer;
+//
+//    @KafkaListener(topics = "${kafka.topics.order-created}")
+//    public void handleOrderCreated(OrderCreatedEvent event) {
+//        log.info("Received OrderCreatedEvent for order {}", event.orderId());
+//        try {
+//            deliveryService.createDelivery(event.orderId());
+//            log.info("Successfully processed delivery for order {}", event.orderId());
+//        } catch (Exception e) {
+//            log.error("Failed to process delivery for order {}: {}", event.orderId(), e.getMessage());
+//            eventProducer.send(
+//                    new DeliveryErrorEvent(
+//                            event.orderId(),
+//                            "DELIVERY_PROCESSING_FAILED: " + e.getMessage(),
+//                            LocalDateTime.now()
+//                    )
+//            );
+//        }
+//    }
+//}
