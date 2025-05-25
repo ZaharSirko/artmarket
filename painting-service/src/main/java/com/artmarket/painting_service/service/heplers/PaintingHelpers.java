@@ -1,5 +1,8 @@
 package com.artmarket.painting_service.service.heplers;
 
+import com.artmarket.painting_service.DTO.PaintingRequest;
+import com.artmarket.painting_service.DTO.PaintingResponse;
+import com.artmarket.painting_service.model.Painting;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -46,4 +49,50 @@ public class PaintingHelpers {
     private String extractFilenameFromUrl(String url) {
         return url.substring(url.lastIndexOf('/') + 1);
     }
+
+    public PaintingResponse convertToResponse(Painting painting) {
+        return new PaintingResponse(
+                painting.getId(),
+                painting.getTitle(),
+                painting.getDescription(),
+                painting.getAuthor(),
+                painting.getReleaseDate(),
+                painting.getPrice(),
+                painting.getWeight(),
+                painting.getWidth(),
+                painting.getHeight(),
+                painting.getDepth(),
+                painting.getImageURL(),
+                painting.getUserId()
+        );
+    }
+
+    public Painting buildPaintingFromRequest(PaintingRequest request, String imageUrl, String userId) {
+        return Painting.builder()
+                .author(request.author())
+                .price(request.price())
+                .title(request.title())
+                .description(request.description())
+                .releaseDate(request.releaseDate())
+                .imageURL(imageUrl)
+                .userId(userId)
+                .build();
+    }
+
+    public void updatePaintingImage(Painting painting, MultipartFile imageFile) throws IOException {
+        if (imageFile != null && !imageFile.isEmpty()) {
+            deleteImageFile(painting.getImageURL());
+            String imageUrl = saveImage(imageFile);
+            painting.setImageURL(imageUrl);
+        }
+    }
+
+    public void updatePaintingFromRequest(Painting painting, PaintingRequest request) {
+        painting.setTitle(request.title());
+        painting.setDescription(request.description());
+        painting.setPrice(request.price());
+        painting.setAuthor(request.author());
+        painting.setReleaseDate(request.releaseDate());
+    }
+
 }

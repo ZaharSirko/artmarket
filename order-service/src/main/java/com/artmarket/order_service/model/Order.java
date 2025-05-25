@@ -1,6 +1,8 @@
 package com.artmarket.order_service.model;
 
+
 import com.artmarket.order_service.model.enums.OrderStatus;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -26,24 +28,24 @@ public class Order {
     @Column(name = "id", nullable = false)
     @JdbcTypeCode(SqlTypes.BIGINT)
     Long id;
-
-    private String userId;
-    private BigDecimal totalPrice;
+    String userId;
 
     @Enumerated(EnumType.STRING)
-    private OrderStatus status;
+    OrderStatus status;
 
-    private String paymentId;
+    BigDecimal itemsPrice;
+    BigDecimal deliveryPrice;
+    BigDecimal totalPrice;
 
     @Embedded
-    private ShippingInfo shippingInfo;
+    ShippingInfo shippingInfo;
 
     @Builder.Default
-    private Instant createdAt = Instant.now();
+    Instant createdAt = Instant.now();
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> items;
+    List<OrderItem> items;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-    private List<OrderStatusHistory> statusHistory;
+    List<OrderStatusHistory> statusHistory;
 }

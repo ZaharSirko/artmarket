@@ -37,15 +37,6 @@ public class RestClientConfig {
                 .baseUrl(orderServiceUrl)
                 .requestFactory(getClientHttpRequestFactory())
                 .observationRegistry(observationRegistry)
-                .requestInterceptor((request, body, execution) -> {
-                    String token = ((JwtAuthenticationToken) SecurityContextHolder
-                            .getContext()
-                            .getAuthentication())
-                            .getToken()
-                            .getTokenValue();
-                    request.getHeaders().add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
-                    return execution.execute(request, body);
-                })
                 .build();
 
         var adapter = RestClientAdapter.create(restClient);

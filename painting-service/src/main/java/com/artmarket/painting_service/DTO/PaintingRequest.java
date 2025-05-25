@@ -14,5 +14,8 @@ public record PaintingRequest(String title,
                               String author,
                               @DateTimeFormat(pattern = "yyyy-MM-dd") Date releaseDate,
                               BigDecimal price,
-                              String imageULR) implements Serializable {
+                              BigDecimal weight,
+                              BigDecimal width,
+                              BigDecimal height,
+                              BigDecimal depth) implements Serializable {
 }

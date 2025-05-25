@@ -1,9 +1,6 @@
 package com.artmarket.order_service.controller;
 
-import com.artmarket.order_service.DTO.OrderItemRequest;
-import com.artmarket.order_service.DTO.OrderRequest;
-import com.artmarket.order_service.DTO.OrderResponse;
-import com.artmarket.order_service.DTO.UpdateShippingRequest;
+import com.artmarket.order_service.DTO.*;
 import com.artmarket.order_service.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,18 +16,27 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderController {
     private static final String ROOT = "";
-    private static final String ID_PATH = "/{id}";
+    private static final String ID_PATH = "/{orderId}";
     private static final String MY_ORDERS = "/my";
-    private static final String ORDER_ITEMS = "/{orderId}/items";
-    private static final String ORDER_SHIPPING = "/{orderId}/shipping";
+    private static final String ORDER_ITEMS = ID_PATH+"/items";
 
     private final OrderService orderService;
 
     @GetMapping(ID_PATH)
     public ResponseEntity<OrderResponse> getOrder(
-            @PathVariable Long id,
+            @PathVariable Long orderId,
             @AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(orderService.getOrderById(id, jwt.getTokenValue()));
+        return ResponseEntity.ok(orderService.getOrderById(orderId, jwt.getTokenValue()));
+    }
+
+
+    @PutMapping(ID_PATH)
+    public ResponseEntity<OrderResponse> updateOrderDelivery(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody @Valid OrderUpdateRequest request) {
+        OrderResponse updatedOrder = orderService.updateOrder(orderId, request, jwt.getTokenValue());
+        return ResponseEntity.ok(updatedOrder);
     }
 
     @PostMapping(ROOT)
@@ -64,13 +70,5 @@ public class OrderController {
                 orderService.removePaintingFromOrder(orderId, request, jwt.getTokenValue()));
     }
 
-    @PatchMapping(ORDER_SHIPPING)
-    public ResponseEntity<OrderResponse> updateShipping(
-            @PathVariable Long orderId,
-            @Valid @RequestBody UpdateShippingRequest request,
-            @AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(
-                orderService.updateShipping(orderId, request, jwt.getTokenValue()));
-    }
 }
 

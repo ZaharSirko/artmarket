@@ -1,10 +1,12 @@
 package com.artmarket.order_service.model;
 
 import com.artmarket.order_service.model.enums.ShippingStatus;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Embeddable
 @Getter
@@ -12,18 +14,21 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Nullable
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class ShippingInfo {
 
-    private String shippingProvider; // e.g. "NOVA_POSHTA"
-    private String trackingNumber;
+    String shippingProvider;
+    String trackingNumber;
 
-    private String recipientName;
-    private String phone;
+    String city;
+    String warehouse;
 
-    private String city;
-    private String warehouse;
+    String recipientFullName;
+    String phone;
+    String email;
 
     @Enumerated(EnumType.STRING)
-    private ShippingStatus shippingStatus;
+    ShippingStatus shippingStatus;
 }
 

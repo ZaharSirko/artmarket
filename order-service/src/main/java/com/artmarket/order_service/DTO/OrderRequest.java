@@ -5,6 +5,5 @@ import org.antlr.v4.runtime.misc.NotNull;
 import java.util.List;
 
 public record OrderRequest(
-        @NotNull List<OrderItemRequest> items,
-        @NotNull ShippingRequest shipping
+        @NotNull List<OrderItemRequest> items
 ) {}

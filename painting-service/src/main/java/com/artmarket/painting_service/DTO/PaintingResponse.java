@@ -16,6 +16,10 @@ public record PaintingResponse(
         String author,
         @DateTimeFormat(pattern = "yyyy-MM-dd")  Date releaseDate,
         BigDecimal price,
+        BigDecimal weight,
+        BigDecimal width,
+        BigDecimal height,
+        BigDecimal depth,
         String imageULR,
         String userId) implements Serializable {
 }

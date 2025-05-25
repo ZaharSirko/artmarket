@@ -35,7 +35,7 @@ public class DeliveryValidator {
             throw new IllegalArgumentException("Recipient warehouse is required");
         }
 
-        if (StringUtils.isBlank(shipping.recipientName())) {
+        if (StringUtils.isBlank(shipping.recipientFullName())) {
             throw new IllegalArgumentException("Recipient name is required");
         }
 
@@ -43,8 +43,5 @@ public class DeliveryValidator {
             throw new IllegalArgumentException("Recipient phone is required");
         }
 
-        if (order.totalPrice() == null || order.totalPrice() <= 0) {
-            throw new IllegalArgumentException("Invalid order total price");
-        }
     }
 }

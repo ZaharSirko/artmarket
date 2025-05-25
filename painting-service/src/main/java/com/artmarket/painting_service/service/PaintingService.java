@@ -11,8 +11,7 @@ import com.artmarket.painting_service.service.heplers.AccessControlHelper;
 import com.artmarket.painting_service.service.heplers.PaintingHelpers;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -28,9 +27,9 @@ import java.util.*;
 import static java.util.Comparator.comparingInt;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class PaintingService {
-    private static final Logger log = LoggerFactory.getLogger(PaintingService.class);
     private final PaintingRepository paintingRepository;
     private final PaintingElasticsearchRepository paintingElasticsearchRepository;
     private final PaintingHelpers paintingHelpers;
@@ -40,38 +39,19 @@ public class PaintingService {
     public Page<PaintingResponse> getPaintings(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return paintingRepository.findAll(pageable)
-                .map(painting -> new PaintingResponse(
-                                painting.getId(),
-                                painting.getTitle(),
-                                painting.getDescription(),
-                                painting.getAuthor(),
-                                painting.getReleaseDate(),
-                                painting.getPrice(),
-                                painting.getImageURL(),
-                                painting.getUserId()
-                        )
-                );
+                .map(paintingHelpers::convertToResponse);
     }
 
     @Transactional
     public void createPainting(PaintingRequest paintingRequest, MultipartFile imageFile) {
         try {
             accessControlHelper.assertCanCreatePainting();
-
             String userId = accessControlHelper.getCurrentUserId();
 
             String imageUrl = paintingHelpers.saveImage(imageFile);
             log.info("Image saved: {}", imageUrl);
 
-            Painting painting = Painting.builder()
-                    .author(paintingRequest.author())
-                    .price(paintingRequest.price())
-                    .title(paintingRequest.title())
-                    .description(paintingRequest.description())
-                    .releaseDate(paintingRequest.releaseDate())
-                    .imageURL(imageUrl)
-                    .userId(userId)
-                    .build();
+            Painting painting = paintingHelpers.buildPaintingFromRequest(paintingRequest, imageUrl, userId);
             paintingRepository.save(painting);
             log.info("Painting created: {}", painting);
         } catch (Exception e) {
@@ -86,15 +66,12 @@ public class PaintingService {
 
         accessControlHelper.checkDeletePermission(painting.getUserId());
 
-
         paintingHelpers.deleteImageFile(painting.getImageURL());
         log.info("Painting image deleted: {}", painting.getImageURL());
-
 
         paintingRepository.deleteById(id);
         log.info("Painting deleted: {}", painting.getId());
     }
-
 
     @Transactional
     public void updatePainting(Long id, PaintingRequest paintingRequest, MultipartFile imageFile) throws IOException {
@@ -103,23 +80,12 @@ public class PaintingService {
 
         accessControlHelper.checkUpdatePermission(painting.getUserId());
 
-        if (imageFile != null && !imageFile.isEmpty()) {
-            paintingHelpers.deleteImageFile(painting.getImageURL());
-            String imageUrl = paintingHelpers.saveImage(imageFile);
-            painting.setImageURL(imageUrl);
-            log.info("Painting image updated: {}", imageUrl);
-        }
-
-        painting.setTitle(paintingRequest.title());
-        painting.setDescription(paintingRequest.description());
-        painting.setPrice(paintingRequest.price());
-        painting.setAuthor(paintingRequest.author());
-        painting.setReleaseDate(paintingRequest.releaseDate());
+        paintingHelpers.updatePaintingImage(painting, imageFile);
+        paintingHelpers.updatePaintingFromRequest(painting, paintingRequest);
 
         paintingRepository.save(painting);
         log.info("Painting updated: {}", painting.getId());
     }
-
 
     public Page<PaintingResponse> searchPaintingsViaElastic(String searchText, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -135,16 +101,7 @@ public class PaintingService {
 
         List<PaintingResponse> paintingsFromDb = paintingRepository.findAllById(ids)
                 .stream()
-                .map(painting -> new PaintingResponse(
-                        painting.getId(),
-                        painting.getTitle(),
-                        painting.getDescription(),
-                        painting.getAuthor(),
-                        painting.getReleaseDate(),
-                        painting.getPrice(),
-                        painting.getImageURL(),
-                        painting.getUserId()
-                ))
+                .map(paintingHelpers::convertToResponse)
                 .sorted(comparingInt(painting -> idsMap.get(painting.id())))
                 .toList();
 
@@ -154,50 +111,25 @@ public class PaintingService {
 
     public Page<PaintingResponse> getUserPaintings(String userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        List<PaintingResponse> userPaintingsFromDb = paintingRepository.findAllByUserId(userId)
+        List<PaintingResponse> userPaintings = paintingRepository.findAllByUserId(userId)
                 .stream()
-                .map(painting -> new PaintingResponse(
-                                painting.getId(),
-                                painting.getTitle(),
-                                painting.getDescription(),
-                                painting.getAuthor(),
-                                painting.getReleaseDate(),
-                                painting.getPrice(),
-                                painting.getImageURL(),
-                                painting.getUserId()
-                        )
-                ).toList();
-        return new PageImpl<>(userPaintingsFromDb, pageable, userPaintingsFromDb.size());
+                .map(paintingHelpers::convertToResponse)
+                .toList();
+
+        return new PageImpl<>(userPaintings, pageable, userPaintings.size());
     }
 
-
     public List<PaintingResponse> getAllPaintingsById(List<Long> paintingIds) {
-     return  paintingRepository.findByIdIn(paintingIds).stream()
-                .map(painting -> new PaintingResponse(
-                        painting.getId(),
-                        painting.getTitle(),
-                        painting.getDescription(),
-                        painting.getAuthor(),
-                        painting.getReleaseDate(),
-                        painting.getPrice(),
-                        painting.getImageURL(),
-                        painting.getUserId()
-                ))
+        return paintingRepository.findByIdIn(paintingIds)
+                .stream()
+                .map(paintingHelpers::convertToResponse)
                 .toList();
     }
 
     public PaintingResponse getPaintingById(Long paintingId) {
         return paintingRepository.findById(paintingId)
-                .map(painting -> new PaintingResponse(
-                        painting.getId(),
-                        painting.getTitle(),
-                        painting.getDescription(),
-                        painting.getAuthor(),
-                        painting.getReleaseDate(),
-                        painting.getPrice(),
-                        painting.getImageURL(),
-                        painting.getUserId()
-                )).orElseThrow(() -> new IllegalArgumentException("Painting not found: "+ paintingId));
+                .map(paintingHelpers::convertToResponse)
+                .orElseThrow(() -> new IllegalArgumentException("Painting not found: " + paintingId));
     }
 }
 

@@ -5,18 +5,19 @@ import com.artmarket.order_service.DTO.client.PaintingResponse;
 import com.artmarket.order_service.DTO.client.UserResponse;
 import com.artmarket.order_service.model.Order;
 import com.artmarket.order_service.model.OrderItem;
-import com.artmarket.order_service.model.ShippingInfo;
 import com.artmarket.order_service.model.enums.OrderStatus;
-import com.artmarket.order_service.model.enums.ShippingStatus;
 import com.artmarket.order_service.repository.OrderRepository;
 import com.artmarket.order_service.service.heplers.OrderServiceHelper;
 import com.artmarket.order_service.service.heplers.OrderValidator;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -25,33 +26,36 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class OrderService {
+
     private final OrderRepository orderRepository;
     private final OrderServiceHelper helper;
     private final OrderValidator validator;
     private final KafkaOrderEventProducer kafkaProducer;
+    private final MeterRegistry meterRegistry;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request, String bearerToken) {
         validator.validateOrderRequest(request);
+        UserResponse user = getUser(bearerToken);
 
-        UserResponse user = helper.getCurrentUser(bearerToken);
         List<PaintingResponse> paintings = helper.getPaintingsForOrder(request);
-        BigDecimal totalPrice = helper.calculateTotalPrice(paintings);
+        BigDecimal itemsPrice = helper.calculateItemsPrice(paintings);
 
         Order order = Order.builder()
                 .userId(user.keycloakId())
                 .status(OrderStatus.NEW)
-                .totalPrice(totalPrice)
-                .shippingInfo(helper.buildShippingInfo(request.shipping()))
+                .itemsPrice(itemsPrice)
                 .build();
 
         order.setItems(helper.buildOrderItems(paintings, order));
+        order.setItemsPrice(itemsPrice);
+
         Order savedOrder = orderRepository.save(order);
 
         kafkaProducer.sendOrderCreatedEvent(savedOrder);
+        recordOrderCreatedMetrics(savedOrder);
 
-        log.info("Created new order {} for user {}", savedOrder.getId(), user.keycloakId());
-
+        log.info("Created new order {} for user {}", order.getId(), user.keycloakId());;
         return mapToResponse(savedOrder);
     }
 
@@ -62,7 +66,7 @@ public class OrderService {
 
         OrderItem item = helper.buildOrderItem(painting, order);
         order.getItems().add(item);
-        order.setTotalPrice(helper.recalculateTotalPrice(order));
+        order.setItemsPrice(helper.recalculateItemsPrice(order));
 
         Order updatedOrder = orderRepository.save(order);
 
@@ -72,7 +76,7 @@ public class OrderService {
                 "PAINTING_ADDED",
                 Map.of(
                         "paintingId", painting.id(),
-                        "newTotalPrice", updatedOrder.getTotalPrice()
+                        "newItemsPrice", updatedOrder.getItemsPrice()
                 )
         );
 
@@ -86,7 +90,7 @@ public class OrderService {
         OrderItem itemToRemove = helper.findOrderItem(order, request.paintingId());
 
         order.getItems().remove(itemToRemove);
-        order.setTotalPrice(helper.recalculateTotalPrice(order));
+        order.setItemsPrice(helper.recalculateItemsPrice(order));
 
         Order updatedOrder = orderRepository.save(order);
 
@@ -105,42 +109,100 @@ public class OrderService {
     }
 
     @Transactional
-    public OrderResponse updateShipping(Long orderId, UpdateShippingRequest request, String bearerToken) {
+    public OrderResponse updateOrder(Long orderId, OrderUpdateRequest request, String bearerToken) {
         Order order = helper.getOrderWithValidation(orderId, bearerToken);
-        ShippingInfo shipping = ShippingInfo.builder()
-                .shippingProvider(request.shippingProvider())
-                .trackingNumber(request.trackingNumber())
-                .shippingStatus(ShippingStatus.valueOf(request.shippingStatus()))
-                .build();
-        order.setShippingInfo(shipping);
 
+        order.setDeliveryPrice(request.deliveryPrice());
+        order.setTotalPrice(request.totalPrice());
+        order.setShippingInfo(helper.buildShippingInfo(request));
 
         Order updatedOrder = orderRepository.save(order);
 
         kafkaProducer.sendShippingUpdatedEvent(
-                orderId,
-                helper.getCurrentUser(bearerToken).keycloakId(),
-                request.shippingProvider(),
-                request.trackingNumber(),
-                ShippingStatus.valueOf(request.shippingStatus())
+                updatedOrder.getId(),
+                getUser(bearerToken).keycloakId(),
+                updatedOrder.getShippingInfo()
         );
 
-        log.info("Updated shipping for order {}", orderId);
+        recordCounter("order.updated", "orderId", orderId.toString());
+        log.info("Updated shipping info for order {}", orderId);
+
+        return mapToResponse(updatedOrder);
+    }
+
+    @Transactional
+    public OrderResponse cancelOrder(Long orderId, String bearerToken) {
+        Order order = helper.getOrderWithValidation(orderId, bearerToken);
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            return mapToResponse(order);
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        Order updatedOrder = orderRepository.save(order);
+
+        kafkaProducer.sendOrderStatusChangedEvent(
+                updatedOrder.getId(),
+                getUser(bearerToken).keycloakId(),
+                OrderStatus.CANCELLED
+        );
+
+        recordCounter("order.cancelled", "orderId", orderId.toString());
+        log.info("Cancelled order {}", orderId);
+
+        return mapToResponse(updatedOrder);
+    }
+
+    @Transactional
+    public OrderResponse completeOrder(Long orderId, String bearerToken) {
+        Order order = helper.getOrderWithValidation(orderId, bearerToken);
+        if (order.getStatus() != OrderStatus.PAID) {
+            return mapToResponse(order);
+        }
+
+        order.setStatus(OrderStatus.COMPLETED);
+        Order updatedOrder = orderRepository.save(order);
+
+        kafkaProducer.sendOrderStatusChangedEvent(
+                updatedOrder.getId(),
+                getUser(bearerToken).keycloakId(),
+                OrderStatus.COMPLETED
+        );
+
+        recordCounter("order.completed", "orderId", orderId.toString());
+        meterRegistry.timer("order.processing.time").record(Duration.between(order.getCreatedAt(), LocalDateTime.now()));
+
+        log.info("Completed order {}", orderId);
         return mapToResponse(updatedOrder);
     }
 
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long id, String bearerToken) {
-        Order order = helper.getOrderWithValidation(id, bearerToken);
-        return mapToResponse(order);
+        return mapToResponse(helper.getOrderWithValidation(id, bearerToken));
     }
 
     @Transactional(readOnly = true)
     public List<OrderResponse> getOrdersForCurrentUser(String bearerToken) {
-        String userId = helper.getCurrentUser(bearerToken).keycloakId();
+        String userId = getUser(bearerToken).keycloakId();
         return orderRepository.findAllByUserId(userId).stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    // === Helpers ===
+
+    private void recordOrderCreatedMetrics(Order order) {
+        meterRegistry.counter("order.created.count").increment();
+        meterRegistry.gauge("order.items.count", order.getItems().size());
+        meterRegistry.gauge("order.items.price", order.getItemsPrice().doubleValue());
+    }
+
+    private void recordCounter(String name, String... tags) {
+        meterRegistry.counter(name, tags).increment();
+    }
+
+
+    private UserResponse getUser(String bearerToken) {
+        return helper.getCurrentUser(bearerToken);
     }
 
     private OrderResponse mapToResponse(Order order) {
@@ -148,6 +210,8 @@ public class OrderService {
                 .id(order.getId())
                 .userId(order.getUserId())
                 .status(order.getStatus())
+                .itemsPrice(order.getItemsPrice())
+                .deliveryPrice(order.getDeliveryPrice())
                 .totalPrice(order.getTotalPrice())
                 .createdAt(order.getCreatedAt())
                 .paintings(helper.getPaintingsForOrderItems(order.getItems()))

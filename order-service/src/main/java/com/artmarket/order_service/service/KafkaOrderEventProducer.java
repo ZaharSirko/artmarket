@@ -3,11 +3,13 @@ package com.artmarket.order_service.service;
 import com.artmarket.order_service.config.KafkaTopics;
 import com.artmarket.order_service.event.*;
 import com.artmarket.order_service.model.Order;
+import com.artmarket.order_service.model.ShippingInfo;
 import com.artmarket.order_service.model.enums.OrderStatus;
 import com.artmarket.order_service.model.enums.ShippingStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 
@@ -15,78 +17,59 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
-@Service
+@Component
 @RequiredArgsConstructor
 @Slf4j
 public class KafkaOrderEventProducer {
-    private final KafkaTemplate<String, OrderEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final KafkaTopics kafkaTopics;
 
     public void sendOrderCreatedEvent(Order order) {
-        sendRecord(kafkaTopics.getOrderCreated(),
-                new OrderCreatedEvent(
-                        order.getId(),
-                        order.getUserId(),
-                        order.getStatus().name(),
-                        order.getTotalPrice(),
-                        order.getItems().size(),
-                        order.getShippingInfo().getShippingProvider(),
-                        LocalDateTime.now()
-                ));
+        OrderCreatedEvent event = new OrderCreatedEvent(
+                order.getId(),
+                order.getUserId(),
+                order.getStatus().name(),
+                order.getItemsPrice(),
+                order.getItems().size(),
+                LocalDateTime.now()
+        );
+        kafkaTemplate.send(kafkaTopics.getOrderCreated(), event);
+        log.info("Sent OrderCreatedEvent for order {}", order.getId());
     }
 
     public void sendOrderStatusChangedEvent(Long orderId, String userId, OrderStatus newStatus) {
-        sendRecord( kafkaTopics.getOrderStatusChanged(),
-                new OrderStatusChangedEvent(
-                        orderId,
-                        userId,
-                        newStatus.name(),
-                        LocalDateTime.now()
-                ));
+        OrderStatusChangedEvent event = new OrderStatusChangedEvent(
+                orderId,
+                userId,
+                newStatus.name(),
+                LocalDateTime.now()
+        );
+        kafkaTemplate.send(kafkaTopics.getOrderStatusChanged(), event);
+        log.info("Sent OrderStatusChangedEvent for order {}", orderId);
     }
 
     public void sendOrderUpdatedEvent(Long orderId, String userId, String updateType, Map<String, Object> details) {
-
-        sendRecord(kafkaTopics.getOrderUpdated(),
-                new OrderUpdatedEvent(
-                        orderId,
-                        userId,
-                        updateType,
-                        details,
-                        LocalDateTime.now()
-                ));
+        OrderUpdatedEvent event = new OrderUpdatedEvent(
+                orderId,
+                userId,
+                updateType,
+                details,
+                LocalDateTime.now()
+        );
+        kafkaTemplate.send(kafkaTopics.getOrderUpdated(), event);
+        log.info("Sent OrderUpdatedEvent for order {}", orderId);
     }
 
-    public void sendShippingUpdatedEvent(Long orderId, String userId, String provider,
-                                         String trackingNumber, ShippingStatus status) {
-        sendRecord(
-                kafkaTopics.getShippingUpdated(),
-                new ShippingUpdatedEvent(
-                        orderId,
-                        userId,
-                        provider,
-                        trackingNumber,
-                        status.name(),
-                        LocalDateTime.now()
-                ));
-    }
-
-    private void sendRecord(String topic, Object value) {
-        String key = value instanceof BaseEvent ?
-                ((BaseEvent) value).orderId().toString() :
-                UUID.randomUUID().toString();
-
-        try {
-            kafkaTemplate.send(topic, key, (OrderEvent) value)
-                    .whenComplete((result, ex) -> {
-                        if (ex != null) {
-                            log.error("Failed to send record to {}: {}", topic, ex.getMessage());
-                        } else {
-                            log.debug("Successfully sent record to {}: {}", topic, value);
-                        }
-                    });
-        } catch (Exception e) {
-            log.error("Error creating Kafka record for topic {}: {}", topic, e.getMessage());
-        }
+    public void sendShippingUpdatedEvent(Long orderId, String userId, ShippingInfo shippingInfo) {
+        ShippingUpdatedEvent event = new ShippingUpdatedEvent(
+                orderId,
+                userId,
+                shippingInfo.getShippingProvider(),
+                shippingInfo.getTrackingNumber(),
+                shippingInfo.getShippingStatus().name(),
+                LocalDateTime.now()
+        );
+        kafkaTemplate.send(kafkaTopics.getShippingUpdated(), event);
+        log.info("Sent ShippingUpdatedEvent for order {}", orderId);
     }
 }

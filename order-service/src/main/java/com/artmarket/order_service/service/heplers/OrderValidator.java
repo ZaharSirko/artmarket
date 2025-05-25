@@ -15,9 +15,9 @@ public class OrderValidator {
             throw new IllegalArgumentException("Order must contain at least one item");
         }
 
-        if (request.shipping() == null) {
-            throw new IllegalArgumentException("Shipping information is required");
-        }
+//        if (request.shipping() == null) {
+//            throw new IllegalArgumentException("Shipping information is required");
+//        }
 
     }
 

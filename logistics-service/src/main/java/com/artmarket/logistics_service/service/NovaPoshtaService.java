@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -17,7 +18,7 @@ public class NovaPoshtaService {
     private final NovaPoshtaClient novaPoshtaClient;
     private final NovaPoshtaProperties properties;
 
-    public DocumentResponse createDelivery(DeliveryRequest request) {
+    public DocumentResponse createDelivery(NovaPoshtaDeliveryRequest request) {
         String counterpartyRef = resolveCounterparty(
                 request.recipientFirstName(),
                 request.recipientMiddleName(),
@@ -41,6 +42,7 @@ public class NovaPoshtaService {
                 contactRef,
                 request.recipientPhone(),
                 request.description(),
+                request.cost(),
                 request.weight(),
                 request.volumeGeneral()
         );
@@ -63,8 +65,9 @@ public class NovaPoshtaService {
         Map<String, Object> documentData = response.data().getFirst();
         return new DocumentResponse(
                 (String) documentData.get("Ref"),
-                (String) documentData.get("IntDocNumber"),
-                (String) documentData.get("EstimatedDeliveryDate")
+                (Double) documentData.get("CostOnSite"),
+                (String) documentData.get("EstimatedDeliveryDate"),
+                (String) documentData.get("IntDocNumber")
         );
     }
 
@@ -243,8 +246,4 @@ public class NovaPoshtaService {
 
         return createCounterparty(createRequest);
     }
-
-
-
-
 }

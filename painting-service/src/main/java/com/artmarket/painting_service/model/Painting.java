@@ -38,6 +38,19 @@ public class Painting {
     String imageURL;
     @NonNull
     String userId;
+    @NonNull
+    BigDecimal weight;
+
+    @NonNull
+    BigDecimal width;
+
+    @NonNull
+    BigDecimal height;
+
+    @NonNull
+    BigDecimal depth;
+
+
    @Builder.Default
    Instant createdAt = Instant.now();
 }

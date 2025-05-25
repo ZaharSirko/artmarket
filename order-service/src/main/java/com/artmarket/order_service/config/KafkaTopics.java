@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @Getter
 @Setter
 @Configuration
-@ConfigurationProperties(prefix = "kafka")
+@ConfigurationProperties(prefix = "kafka.topics")
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class KafkaTopics {
      String orderCreated;

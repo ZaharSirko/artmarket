@@ -17,6 +17,8 @@ public record OrderResponse(
         Long id,
         String userId,
         OrderStatus status,
+        BigDecimal itemsPrice,
+        BigDecimal deliveryPrice,
         BigDecimal totalPrice,
         Instant createdAt,
         List<PaintingResponse> paintings,

@@ -10,6 +10,7 @@ import com.artmarket.order_service.model.OrderItem;
 import com.artmarket.order_service.model.ShippingInfo;
 import com.artmarket.order_service.model.enums.ShippingStatus;
 import com.artmarket.order_service.repository.OrderRepository;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -85,13 +86,13 @@ public class OrderServiceHelper {
                 });
     }
 
-    public BigDecimal calculateTotalPrice(List<PaintingResponse> paintings) {
+    public BigDecimal calculateItemsPrice(List<PaintingResponse> paintings) {
         return paintings.stream()
                 .map(PaintingResponse::price)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public BigDecimal recalculateTotalPrice(Order order) {
+    public BigDecimal recalculateItemsPrice(Order order) {
         return order.getItems().stream()
                 .map(OrderItem::getPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -111,25 +112,35 @@ public class OrderServiceHelper {
                 .build();
     }
 
-    public ShippingInfo buildShippingInfo(ShippingRequest request) {
+    public ShippingInfo buildShippingInfo(OrderUpdateRequest request) {
         return ShippingInfo.builder()
-                .recipientName(request.recipientName())
-                .phone(request.phone())
-                .city(request.city())
-                .warehouse(request.warehouse())
-                .shippingProvider(request.shippingProvider())
-                .shippingStatus(ShippingStatus.NEW)
+                .shippingProvider(request.shipping().shippingProvider())
+                .trackingNumber(request.shipping().trackingNumber())
+                .city(request.shipping().city())
+                .warehouse(request.shipping().warehouse())
+                .recipientFullName(request.shipping().recipientFullName())
+                .phone(request.shipping().phone())
+                .email(request.shipping().email())
+                .shippingStatus(request.shipping().shippingStatus())
                 .build();
     }
 
+
     public ShippingResponse buildShippingResponse(ShippingInfo shippingInfo) {
+
+        if (shippingInfo == null) {
+            log.warn("ShippingInfo is null when building ShippingResponse");
+            return null;
+        }
+
         return new ShippingResponse(
                 shippingInfo.getShippingProvider(),
                 shippingInfo.getTrackingNumber(),
-                shippingInfo.getRecipientName(),
-                shippingInfo.getPhone(),
                 shippingInfo.getCity(),
                 shippingInfo.getWarehouse(),
+                shippingInfo.getRecipientFullName(),
+                shippingInfo.getPhone(),
+                shippingInfo.getEmail(),
                 shippingInfo.getShippingStatus()
         );
     }

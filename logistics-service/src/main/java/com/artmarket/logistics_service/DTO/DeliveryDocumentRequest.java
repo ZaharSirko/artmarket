@@ -13,6 +13,7 @@ public record DeliveryDocumentRequest(
         String ContactRecipient,
         String RecipientsPhone,
         String Description,
+        String Cost,
         String Weight,
         String VolumeGeneral
 ) {
@@ -27,6 +28,7 @@ public record DeliveryDocumentRequest(
                 Map.entry("ServiceType", "WarehouseWarehouse"),
                 Map.entry("SeatsAmount", "1"),
                 Map.entry("Description", Description),
+                Map.entry("Cost", Cost),
 
                 // Дані відправника з NovaPoshtaProperties
                 Map.entry("CitySender", props.citySender()),
