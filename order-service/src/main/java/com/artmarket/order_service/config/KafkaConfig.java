@@ -1,6 +1,5 @@
 package com.artmarket.order_service.config;
 
-import com.artmarket.order_service.event.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -9,14 +8,12 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
-import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
@@ -65,18 +62,17 @@ public class KafkaConfig {
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "order-service-group");
 
-        // Configure ErrorHandlingDeserializer properly
+
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
         props.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
 
-        // JsonDeserializer configuration
+
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
         props.put(JsonDeserializer.REMOVE_TYPE_INFO_HEADERS, false);
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, true);
 
-        // Add type mappings for all your event types
         props.put(JsonDeserializer.TYPE_MAPPINGS,
                 "orderCreatedEvent:com.artmarket.order_service.event.OrderCreatedEvent," +
                         "orderStatusChangedEvent:com.artmarket.order_service.event.OrderStatusChangedEvent," +
@@ -92,16 +88,13 @@ public class KafkaConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
 
-        // Configure proper error handling
         DefaultErrorHandler errorHandler = new DefaultErrorHandler(
                 (record, exception) -> {
-                    // Custom logic for failed messages
                     log.error("Failed to process message: {}", record.value(), exception);
                 },
                 new FixedBackOff(1000L, 3) // 3 retries with 1 second interval
         );
 
-        // Add deserialization exception handler
         errorHandler.addNotRetryableExceptions(IllegalStateException.class);
 
         factory.setCommonErrorHandler(errorHandler);

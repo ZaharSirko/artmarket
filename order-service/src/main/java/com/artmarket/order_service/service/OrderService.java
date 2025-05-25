@@ -55,7 +55,7 @@ public class OrderService {
         kafkaProducer.sendOrderCreatedEvent(savedOrder);
         recordOrderCreatedMetrics(savedOrder);
 
-        log.info("Created new order {} for user {}", order.getId(), user.keycloakId());;
+        log.info("Created new order {} for user {}", order.getId(), user.keycloakId());
         return mapToResponse(savedOrder);
     }
 

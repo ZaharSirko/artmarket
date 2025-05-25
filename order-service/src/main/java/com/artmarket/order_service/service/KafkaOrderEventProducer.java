@@ -5,17 +5,13 @@ import com.artmarket.order_service.event.*;
 import com.artmarket.order_service.model.Order;
 import com.artmarket.order_service.model.ShippingInfo;
 import com.artmarket.order_service.model.enums.OrderStatus;
-import com.artmarket.order_service.model.enums.ShippingStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
