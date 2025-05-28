@@ -1,15 +1,19 @@
 package com.artmarket.order_service.service;
 
-import com.artmarket.order_service.DTO.*;
-import com.artmarket.order_service.DTO.client.PaintingResponse;
-import com.artmarket.order_service.DTO.client.UserResponse;
+import com.artmarket.DTO.*;
+import com.artmarket.events.OrderUpdatedEvent;
+
+import com.artmarket.order_service.DTO.OrderItemRequest;
+import com.artmarket.order_service.DTO.OrderRequest;
+import com.artmarket.order_service.event.OrderPaintingUpdatedEvent;
 import com.artmarket.order_service.model.Order;
 import com.artmarket.order_service.model.OrderItem;
-import com.artmarket.order_service.model.enums.OrderStatus;
+
 import com.artmarket.order_service.repository.OrderRepository;
 import com.artmarket.order_service.service.heplers.OrderServiceHelper;
 import com.artmarket.order_service.service.heplers.OrderValidator;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +23,6 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 
 @Service
@@ -36,7 +39,7 @@ public class OrderService {
     @Transactional
     public OrderResponse createOrder(OrderRequest request, String bearerToken) {
         validator.validateOrderRequest(request);
-        UserResponse user = getUser(bearerToken);
+        UserResponse user = helper.getCurrentUser(bearerToken);
 
         List<PaintingResponse> paintings = helper.getPaintingsForOrder(request);
         BigDecimal itemsPrice = helper.calculateItemsPrice(paintings);
@@ -51,8 +54,7 @@ public class OrderService {
         order.setItemsPrice(itemsPrice);
 
         Order savedOrder = orderRepository.save(order);
-
-        kafkaProducer.sendOrderCreatedEvent(savedOrder);
+        kafkaProducer.sendOrderCreatedEvent(savedOrder,paintings);
         recordOrderCreatedMetrics(savedOrder);
 
         log.info("Created new order {} for user {}", order.getId(), user.keycloakId());
@@ -70,15 +72,7 @@ public class OrderService {
 
         Order updatedOrder = orderRepository.save(order);
 
-        kafkaProducer.sendOrderUpdatedEvent(
-                updatedOrder.getId(),
-                helper.getCurrentUser(bearerToken).keycloakId(),
-                "PAINTING_ADDED",
-                Map.of(
-                        "paintingId", painting.id(),
-                        "newItemsPrice", updatedOrder.getItemsPrice()
-                )
-        );
+        kafkaProducer.sendOrderPaintingUpdateEvent(updatedOrder, List.of(painting), OrderPaintingUpdatedEvent.ActionType.ADDED);
 
         log.info("Added painting {} to order {}", painting.id(), orderId);
         return mapToResponse(updatedOrder);
@@ -91,43 +85,42 @@ public class OrderService {
 
         order.getItems().remove(itemToRemove);
         order.setItemsPrice(helper.recalculateItemsPrice(order));
+        var removedPainting = PaintingResponse.builder()
+                .id(itemToRemove.getPaintingId())
+                .price(itemToRemove.getPrice())
+                .build();
 
         Order updatedOrder = orderRepository.save(order);
 
-        kafkaProducer.sendOrderUpdatedEvent(
-                updatedOrder.getId(),
-                helper.getCurrentUser(bearerToken).keycloakId(),
-                "PAINTING_REMOVED",
-                Map.of(
-                        "paintingId", request.paintingId(),
-                        "newTotalPrice", updatedOrder.getTotalPrice()
-                )
-        );
+        kafkaProducer.sendOrderPaintingUpdateEvent(updatedOrder, List.of(removedPainting), OrderPaintingUpdatedEvent.ActionType.REMOVED);
 
         log.info("Removed painting {} from order {}", request.paintingId(), orderId);
         return mapToResponse(updatedOrder);
     }
 
+
     @Transactional
-    public OrderResponse updateOrder(Long orderId, OrderUpdateRequest request, String bearerToken) {
-        Order order = helper.getOrderWithValidation(orderId, bearerToken);
+    public void updateOrderFromEvent(OrderUpdatedEvent event) {
+        log.info("Processing OrderUpdatedEvent for order {}", event.orderId());
 
-        order.setDeliveryPrice(request.deliveryPrice());
-        order.setTotalPrice(request.totalPrice());
-        order.setShippingInfo(helper.buildShippingInfo(request));
+        Order order = orderRepository.findById(event.orderId())
+                .orElseThrow(() -> {
+                    log.error("Order not found for event: {}", event.orderId());
+                    return new EntityNotFoundException("Order not found");
+                });
 
-        Order updatedOrder = orderRepository.save(order);
+        order.setDeliveryPrice(event.deliveryPrice());
+        order.setTotalPrice(event.totalPrice());
 
-        kafkaProducer.sendShippingUpdatedEvent(
-                updatedOrder.getId(),
-                getUser(bearerToken).keycloakId(),
-                updatedOrder.getShippingInfo()
-        );
+        if (event.shipping() != null) {
+            order.setShippingInfo(helper.buildShippingInfoFromEvent(event.shipping()));
+        }
+        order.setStatus(OrderStatus.PROCESSED);
 
-        recordCounter("order.updated", "orderId", orderId.toString());
-        log.info("Updated shipping info for order {}", orderId);
+        orderRepository.save(order);
+        log.info("Order {} updated from Kafka event", order.getId());
 
-        return mapToResponse(updatedOrder);
+        kafkaProducer.sendOrder(mapToResponse(order));
     }
 
     @Transactional
@@ -142,9 +135,12 @@ public class OrderService {
 
         kafkaProducer.sendOrderStatusChangedEvent(
                 updatedOrder.getId(),
-                getUser(bearerToken).keycloakId(),
-                OrderStatus.CANCELLED
+                helper.getCurrentUser(bearerToken).keycloakId(),
+                updatedOrder.getStatus(),
+                OrderStatus.CANCELLED,
+                "Cancelled by user"
         );
+
 
         recordCounter("order.cancelled", "orderId", orderId.toString());
         log.info("Cancelled order {}", orderId);
@@ -164,8 +160,10 @@ public class OrderService {
 
         kafkaProducer.sendOrderStatusChangedEvent(
                 updatedOrder.getId(),
-                getUser(bearerToken).keycloakId(),
-                OrderStatus.COMPLETED
+                helper.getCurrentUser(bearerToken).keycloakId(),
+                OrderStatus.PAID,
+                OrderStatus.COMPLETED,
+                "Order successfully completed"
         );
 
         recordCounter("order.completed", "orderId", orderId.toString());
@@ -182,7 +180,7 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public List<OrderResponse> getOrdersForCurrentUser(String bearerToken) {
-        String userId = getUser(bearerToken).keycloakId();
+        String userId = helper.getCurrentUser(bearerToken).keycloakId();
         return orderRepository.findAllByUserId(userId).stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -200,10 +198,6 @@ public class OrderService {
         meterRegistry.counter(name, tags).increment();
     }
 
-
-    private UserResponse getUser(String bearerToken) {
-        return helper.getCurrentUser(bearerToken);
-    }
 
     private OrderResponse mapToResponse(Order order) {
         return OrderResponse.builder()

@@ -64,7 +64,7 @@ public class NovaPoshtaService {
         Map<String, Object> documentData = response.data().getFirst();
         return new DocumentResponse(
                 (String) documentData.get("Ref"),
-                (Double) documentData.get("CostOnSite"),
+                convertToDouble(documentData.get("CostOnSite")),
                 (String) documentData.get("EstimatedDeliveryDate"),
                 (String) documentData.get("IntDocNumber")
         );
@@ -95,11 +95,17 @@ public class NovaPoshtaService {
     }
 
     public String getDocumentStatus(String documentRef) {
+        Map<String, Object> methodProperties = Map.of(
+                "Documents", List.of(
+                        Map.of("DocumentNumber", documentRef)
+                )
+        );
+
         NovaPoshtaRequest request = new NovaPoshtaRequest(
                 properties.apiKey(),
                 "TrackingDocument",
                 "getStatusDocuments",
-                Map.of("DocumentNumber", documentRef)
+                methodProperties
         );
 
         NovaPoshtaResponse response = novaPoshtaClient.post(request);
@@ -244,5 +250,15 @@ public class NovaPoshtaService {
         );
 
         return createCounterparty(createRequest);
+    }
+
+    private Double convertToDouble(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue();
+        }
+        throw new IllegalArgumentException("CostOnSite must be a number");
     }
 }

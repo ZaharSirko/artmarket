@@ -1,14 +1,16 @@
 package com.artmarket.order_service.service.heplers;
 
-import com.artmarket.order_service.DTO.*;
-import com.artmarket.order_service.DTO.client.PaintingResponse;
-import com.artmarket.order_service.DTO.client.UserResponse;
+
+import com.artmarket.DTO.*;
+import com.artmarket.order_service.DTO.OrderItemRequest;
+import com.artmarket.order_service.DTO.OrderRequest;
 import com.artmarket.order_service.client.PaintingClient;
 import com.artmarket.order_service.client.UserClient;
 import com.artmarket.order_service.model.Order;
 import com.artmarket.order_service.model.OrderItem;
 import com.artmarket.order_service.model.ShippingInfo;
 import com.artmarket.order_service.repository.OrderRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -162,4 +164,22 @@ public class OrderServiceHelper {
             }
         }
     }
+
+    public ShippingInfo buildShippingInfoFromEvent(ShippingUpdate shippingUpdate) {
+        if (shippingUpdate == null) {
+            return null;
+        }
+
+        return ShippingInfo.builder()
+                .shippingProvider(shippingUpdate.shippingProvider())
+                .trackingNumber(shippingUpdate.trackingNumber())
+                .city(shippingUpdate.city())
+                .warehouse(shippingUpdate.warehouse())
+                .recipientFullName(shippingUpdate.recipientFullName())
+                .phone(shippingUpdate.phone())
+                .email(shippingUpdate.email())
+                .shippingStatus(shippingUpdate.shippingStatus())
+                .build();
+    }
+
 }

@@ -1,37 +1,45 @@
 package com.artmarket.logistics_service.service;
 
-import com.artmarket.logistics_service.event.DeliveryErrorEvent;
-import com.artmarket.logistics_service.event.OrderCreatedEvent;
+
+import com.artmarket.DTO.OrderResponse;
+import com.artmarket.events.OrderCreatedEvent;
+import com.artmarket.events.OrderUpdatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
-//@Service
-//@Slf4j
-//@RequiredArgsConstructor
-//public class OrderEventConsumer {
-//    private final NovaPoshtaService deliveryService;
-//    private final KafkaDeliveryEventProducer eventProducer;
-//
-//    @KafkaListener(topics = "${kafka.topics.order-created}")
-//    public void handleOrderCreated(OrderCreatedEvent event) {
-//        log.info("Received OrderCreatedEvent for order {}", event.orderId());
-//        try {
-//            deliveryService.createDelivery(event.orderId());
-//            log.info("Successfully processed delivery for order {}", event.orderId());
-//        } catch (Exception e) {
-//            log.error("Failed to process delivery for order {}: {}", event.orderId(), e.getMessage());
-//            eventProducer.send(
-//                    new DeliveryErrorEvent(
-//                            event.orderId(),
-//                            "DELIVERY_PROCESSING_FAILED: " + e.getMessage(),
-//                            LocalDateTime.now()
-//                    )
-//            );
-//        }
-//    }
-//}
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class OrderEventConsumer {
+
+    @KafkaListener(topics = "#{'${kafka.topics.order-created}'}")
+    public void handleOrderCreated(OrderCreatedEvent event) {
+        OrderResponse order = convertToResponse(event);
+
+
+    }
+
+    @KafkaListener(topics = "#{'${kafka.topics.order-updated}'}")
+    public void handleOrderUpdated(OrderUpdatedEvent event) {
+        // Оновити дані в кеші на основі події
+        // Можна реалізувати часткове оновлення даних
+        log.info("Received update for order {}", event.orderId());
+    }
+
+    private OrderResponse convertToResponse(OrderCreatedEvent event) {
+        return OrderResponse.builder()
+                .id(event.orderId())
+                .userId(event.userId())
+                .itemsPrice(event.itemsPrice())
+                .deliveryPrice(BigDecimal.ZERO)
+                .totalPrice(event.itemsPrice())
+                .createdAt(Instant.from(event.eventTime()))
+                .paintings(event.paintings())
+                .build();
+    }
+}

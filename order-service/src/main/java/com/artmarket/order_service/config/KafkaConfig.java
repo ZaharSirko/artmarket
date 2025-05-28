@@ -1,5 +1,6 @@
 package com.artmarket.order_service.config;
 
+import com.artmarket.config.KafkaTopics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -74,10 +75,13 @@ public class KafkaConfig {
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, true);
 
         props.put(JsonDeserializer.TYPE_MAPPINGS,
-                "orderCreatedEvent:com.artmarket.order_service.event.OrderCreatedEvent," +
-                        "orderStatusChangedEvent:com.artmarket.order_service.event.OrderStatusChangedEvent," +
-                        "orderUpdatedEvent:com.artmarket.order_service.event.OrderUpdatedEvent," +
-                        "shippingUpdatedEvent:com.artmarket.order_service.event.ShippingUpdatedEvent");
+                "orderCreatedEvent:com.artmarket.events.OrderCreatedEvent," +
+                        "orderStatusChangedEvent:com.artmarket.events.OrderStatusChangedEvent," +
+                        "orderUpdatedEvent:com.artmarket.events.OrderUpdatedEvent," +
+                        "shippingUpdatedEvent:com.artmarket.events.ShippingUpdatedEvent,"+
+                        "OrderPaintingUpdatedEvent:com.artmarket.order_service.event.OrderPaintingUpdatedEvent"
+        );
+
 
         return new DefaultKafkaConsumerFactory<>(props);
     }

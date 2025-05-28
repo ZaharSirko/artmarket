@@ -1,7 +1,8 @@
 package com.artmarket.logistics_service.service.hepler;
 
-import com.artmarket.logistics_service.DTO.client.OrderResponse;
-import com.artmarket.logistics_service.DTO.client.ShippingResponse;
+
+import com.artmarket.DTO.OrderResponse;
+import com.artmarket.DTO.ShippingResponse;
 import com.artmarket.logistics_service.client.OrderClient;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;

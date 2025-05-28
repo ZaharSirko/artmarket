@@ -1,26 +1,37 @@
 package com.artmarket.logistics_service.service;
 
+import com.artmarket.DTO.*;
+import com.artmarket.config.KafkaTopics;
+import com.artmarket.events.OrderUpdatedEvent;
 import com.artmarket.logistics_service.DTO.DeliveryRequest;
 import com.artmarket.logistics_service.DTO.NovaPoshtaDeliveryRequest;
 import com.artmarket.logistics_service.DTO.DocumentResponse;
-import com.artmarket.logistics_service.DTO.client.*;
 import com.artmarket.logistics_service.client.OrderClient;
+
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class OrderDeliveryService {
-    private final OrderClient orderClient;
     private final NovaPoshtaService novaPoshtaService;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTopics kafkaTopics;
+    private final OrderClient orderClient;
 
-    public DocumentResponse processOrderDelivery(Long orderId, String authToken, DeliveryRequest request) {
+    @Transactional
+    public DocumentResponse processOrderDelivery(Long orderId,String authToken, DeliveryRequest request) {
         log.info("[Order {}] Starting delivery processing", orderId);
 
         try {
@@ -28,29 +39,43 @@ public class OrderDeliveryService {
             OrderResponse order = orderClient.getOrder(orderId, authToken);
             log.info("[Order {}] Successfully retrieved order with {} paintings", orderId, order.paintings().size());
 
-            log.debug("[Order {}] Enriching delivery request with order details", orderId);
             NovaPoshtaDeliveryRequest enrichedRequest = enrichDeliveryRequest(request, order);
-            log.debug("[Order {}] Enriched request - weight: {}, volume: {}",
-                    orderId, enrichedRequest.weight(), enrichedRequest.volumeGeneral());
-
-            log.info("[Order {}] Creating delivery via NovaPoshta API", orderId);
             DocumentResponse documentResponse = novaPoshtaService.createDelivery(enrichedRequest);
-            log.info("[Order {}] Delivery created successfully. Tracking number: {}, Cost: {}",
-                    orderId, documentResponse.IntDocNumber(), documentResponse.CostOnSite());
 
-            log.debug("[Order {}] Preparing order update request", orderId);
             OrderUpdateRequest updateRequest = createOrderUpdateRequest(documentResponse, enrichedRequest, order);
-
-            log.info("[Order {}] Updating order with shipping details", orderId);
-            orderClient.updateShipping(orderId, authToken, updateRequest);
+            sendOrderUpdateEvent(orderId,order.userId(), updateRequest);
 
             log.info("[Order {}] Delivery processing completed successfully", orderId);
             return documentResponse;
 
         } catch (Exception e) {
             log.error("[Order {}] Error processing delivery: {}", orderId, e.getMessage(), e);
+            sendDeliveryFailedEvent(orderId, e.getMessage());
             throw new DeliveryProcessingException("Failed to process delivery for order " + orderId, e);
         }
+    }
+
+    private void sendOrderUpdateEvent(Long orderId,String userId, OrderUpdateRequest updateRequest) {
+        OrderUpdatedEvent event = new OrderUpdatedEvent(
+                orderId,
+                userId,
+                updateRequest.deliveryPrice(),
+                updateRequest.totalPrice(),
+                updateRequest.shipping(),
+                LocalDateTime.now()
+        );
+
+        kafkaTemplate.send(kafkaTopics.getOrderUpdated(), event);
+        log.info("Sent OrderUpdatedEvent for order {}", orderId);
+    }
+
+    private void sendDeliveryFailedEvent(Long orderId, String errorMessage) {
+        Map<String, Object> event = Map.of(
+                "orderId", orderId,
+                "error", errorMessage,
+                "timestamp", LocalDateTime.now()
+        );
+        kafkaTemplate.send(kafkaTopics.getShippingFailed(), event);
     }
 
     private NovaPoshtaDeliveryRequest enrichDeliveryRequest(DeliveryRequest request, OrderResponse order) {
@@ -97,7 +122,7 @@ public class OrderDeliveryService {
                                                         OrderResponse order) {
         log.debug("Creating order update request from delivery response");
 
-        BigDecimal deliveryPrice = new BigDecimal(documentResponse.CostOnSite());
+        BigDecimal deliveryPrice = BigDecimal.valueOf(documentResponse.CostOnSite());
         log.debug("Delivery cost: {}", deliveryPrice);
 
         BigDecimal totalPrice = order.itemsPrice().add(deliveryPrice);

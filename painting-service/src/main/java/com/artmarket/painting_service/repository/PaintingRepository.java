@@ -9,6 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface PaintingRepository extends JpaRepository<Painting, Long> {
-    Optional<Painting> findAllByUserId(String userId);
+    List<Painting> findAllByUserId(String userId);
     List<Painting> findByIdIn(List<Long> ids);
 }

@@ -1,7 +1,7 @@
 package com.artmarket.order_service.model;
 
 
-import com.artmarket.order_service.model.enums.OrderStatus;
+import com.artmarket.DTO.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;

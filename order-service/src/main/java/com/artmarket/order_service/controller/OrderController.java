@@ -1,6 +1,10 @@
 package com.artmarket.order_service.controller;
 
-import com.artmarket.order_service.DTO.*;
+
+import com.artmarket.DTO.OrderResponse;
+import com.artmarket.DTO.OrderUpdateRequest;
+import com.artmarket.order_service.DTO.OrderItemRequest;
+import com.artmarket.order_service.DTO.OrderRequest;
 import com.artmarket.order_service.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,15 +33,6 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrderById(orderId, jwt.getTokenValue()));
     }
 
-
-    @PutMapping(ID_PATH)
-    public ResponseEntity<OrderResponse> updateOrderDelivery(
-            @PathVariable Long orderId,
-            @AuthenticationPrincipal Jwt jwt,
-            @RequestBody @Valid OrderUpdateRequest request) {
-        OrderResponse updatedOrder = orderService.updateOrder(orderId, request, jwt.getTokenValue());
-        return ResponseEntity.ok(updatedOrder);
-    }
 
     @PostMapping(ROOT)
     public ResponseEntity<OrderResponse> createOrder(

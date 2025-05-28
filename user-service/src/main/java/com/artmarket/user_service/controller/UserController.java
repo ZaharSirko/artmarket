@@ -1,8 +1,9 @@
 package com.artmarket.user_service.controller;
 
 
+import com.artmarket.DTO.UserResponse;
 import com.artmarket.user_service.DTO.UserRegistrationRequest;
-import com.artmarket.user_service.DTO.UserResponse;
+
 import com.artmarket.user_service.DTO.client.PageResponse;
 import com.artmarket.user_service.service.KeycloakUserService;
 import lombok.RequiredArgsConstructor;

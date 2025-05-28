@@ -1,6 +1,7 @@
 package com.artmarket.painting_service.service.heplers;
 
-import com.artmarket.painting_service.DTO.client.UserResponse;
+
+import com.artmarket.DTO.UserResponse;
 import com.artmarket.painting_service.DTO.client.UserType;
 import com.artmarket.painting_service.client.UserClient;
 import lombok.RequiredArgsConstructor;
