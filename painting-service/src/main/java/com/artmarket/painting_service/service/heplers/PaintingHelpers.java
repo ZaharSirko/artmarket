@@ -76,6 +76,10 @@ public class PaintingHelpers {
                 .releaseDate(request.releaseDate())
                 .imageURL(imageUrl)
                 .userId(userId)
+                .weight(request.weight())
+                .width(request.width())
+                .height(request.height())
+                .depth(request.depth())
                 .build();
     }
 

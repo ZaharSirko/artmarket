@@ -21,8 +21,8 @@
   },
   "clients": [
     {
-      "clientId": "painting-service",
-      "secret": "painting-service-secret",
+      "clientId": "user-service",
+      "secret": "user-service-secret",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
