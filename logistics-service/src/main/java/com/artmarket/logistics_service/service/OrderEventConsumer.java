@@ -19,15 +19,11 @@ public class OrderEventConsumer {
 
     @KafkaListener(topics = "#{'${kafka.topics.order-created}'}")
     public void handleOrderCreated(OrderCreatedEvent event) {
-        OrderResponse order = convertToResponse(event);
-
-
+         convertToResponse(event);
     }
 
     @KafkaListener(topics = "#{'${kafka.topics.order-updated}'}")
     public void handleOrderUpdated(OrderUpdatedEvent event) {
-        // Оновити дані в кеші на основі події
-        // Можна реалізувати часткове оновлення даних
         log.info("Received update for order {}", event.orderId());
     }
 

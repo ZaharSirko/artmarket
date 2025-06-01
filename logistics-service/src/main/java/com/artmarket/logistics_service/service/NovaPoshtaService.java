@@ -26,9 +26,7 @@ public class NovaPoshtaService {
                 request.recipientEmail()
         );
 
-
         String contactRef = getContactRecipientRef(counterpartyRef);
-
 
         String cityRef = getCityRefByName(request.cityName());
         String warehouseRef = getWarehouseRefByCityRefAndNumber(cityRef, request.warehouseNumber());
