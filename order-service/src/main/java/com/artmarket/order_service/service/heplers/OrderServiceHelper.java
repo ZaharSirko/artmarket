@@ -10,7 +10,6 @@ import com.artmarket.order_service.model.Order;
 import com.artmarket.order_service.model.OrderItem;
 import com.artmarket.order_service.model.ShippingInfo;
 import com.artmarket.order_service.repository.OrderRepository;
-import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +39,7 @@ public class OrderServiceHelper {
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> {
                     log.error("Order not found with id: {}", orderId);
-                    return new EntityNotFoundException("Order not found");
+                    return new EntityNotFoundException("Order not found with id: " + orderId);
                 });
     }
 
@@ -82,9 +81,12 @@ public class OrderServiceHelper {
                 .findFirst()
                 .orElseThrow(() -> {
                     log.error("Painting {} not found in order {}", paintingId, order.getId());
-                    return new EntityNotFoundException("Painting not found in order");
+                    return new EntityNotFoundException(
+                            "Painting " + paintingId + " not found in order " + order.getId()
+                    );
                 });
     }
+
 
     public BigDecimal calculateItemsPrice(List<PaintingResponse> paintings) {
         return paintings.stream()

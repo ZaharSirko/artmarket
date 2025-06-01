@@ -137,6 +137,13 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.github.dasniko</groupId>
+			<artifactId>testcontainers-keycloak</artifactId>
+			<version>3.7.0</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>com.artmarket</groupId>
 			<artifactId>artmarket-events</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
