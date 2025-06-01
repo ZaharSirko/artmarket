@@ -1,0 +1,54 @@
+{
+  "id": "artmarket",
+  "realm": "artmarket",
+  "enabled": true,
+  "displayName": "ArtMarket Test Realm",
+  "roles": {
+    "realm": [
+      {"name": "ARTIST"},
+      {"name": "COLLECTOR"},
+      {"name": "GALLERY_OWNER"}
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "user-service",
+      "secret": "user-service-secret",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"]
+    }
+
+  ],
+  "users": [
+    {
+      "username": "artist@artmarket.com",
+      "enabled": true,
+      "email": "artist@artmarket.com",
+      "firstName": "Artist",
+      "lastName": "User",
+      "credentials": [
+        {"type": "password", "value": "artist", "temporary": false}
+      ],
+      "realmRoles": ["ARTIST", "admin", "default-roles-master"]
+    },
+
+    {
+      "username": "service-account-user-service",
+      "enabled": true,
+      "serviceAccountClientId": "user-service",
+      "clientRoles": {
+        "realm-management": [
+          "view-users",
+          "query-users",
+          "manage-users"
+        ]
+      }
+    }
+  ]
+}

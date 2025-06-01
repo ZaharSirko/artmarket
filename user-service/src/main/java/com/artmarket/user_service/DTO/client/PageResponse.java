@@ -1,5 +1,6 @@
 package com.artmarket.user_service.DTO.client;
 
+import com.artmarket.DTO.PaintingResponse;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

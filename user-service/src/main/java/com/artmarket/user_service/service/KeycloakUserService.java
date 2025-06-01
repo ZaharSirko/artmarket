@@ -29,8 +29,6 @@ public class KeycloakUserService {
     private static final Logger log = LoggerFactory.getLogger(KeycloakUserService.class);
     private final KeycloakHelper keycloakHelper;
     private final PaintingClient paintingClient;
-    private final Keycloak keycloak;
-    private final KeycloakConfig config;
 
     public UserRegistrationRequest createUser(UserRegistrationRequest request) {
 
@@ -72,7 +70,7 @@ public class KeycloakUserService {
 
 
     public void assignRole(String userId, String roleName) {
-        UserResource userResource = keycloakHelper.getUserResource(userId);
+        UserResource userResource = keycloakHelper.getUsersResource().get(userId);
         RolesResource rolesResource = keycloakHelper.getRolesResource();
         RoleRepresentation representation = rolesResource.get(roleName).toRepresentation();
         userResource.roles().realmLevel().add(Collections.singletonList(representation));
@@ -114,7 +112,7 @@ public class KeycloakUserService {
 
     public void updatePassword(String resetPassword, String userId) {
 
-        UserResource userResource = keycloakHelper.getUserResource(userId);
+        UserResource userResource = keycloakHelper.getUsersResource().get(userId);
         CredentialRepresentation credentialRepresentation=new CredentialRepresentation();
         credentialRepresentation.setValue(resetPassword);
         credentialRepresentation.setType(CredentialRepresentation.PASSWORD);
@@ -156,6 +154,5 @@ public class KeycloakUserService {
                 paintings
                 );
     }
-
 }
 

@@ -43,8 +43,8 @@ public class UserController {
 
     @PostMapping(USER_REGISTRATION)
     public ResponseEntity<UserRegistrationRequest> createUser(@RequestBody UserRegistrationRequest request) {
-        var user = keycloakUserService.createUser(request);
-        return new ResponseEntity<>(user, HttpStatus.CREATED);
+        UserRegistrationRequest createdUser = keycloakUserService.createUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
 
 
