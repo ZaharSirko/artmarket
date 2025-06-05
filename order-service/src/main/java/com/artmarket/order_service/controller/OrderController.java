@@ -1,8 +1,8 @@
 package com.artmarket.order_service.controller;
 
 
-import com.artmarket.DTO.OrderResponse;
-import com.artmarket.DTO.OrderUpdateRequest;
+import com.artmarket.dto.OrderResponse;
+import com.artmarket.dto.OrderUpdateRequest;
 import com.artmarket.order_service.DTO.OrderItemRequest;
 import com.artmarket.order_service.DTO.OrderRequest;
 import com.artmarket.order_service.service.OrderService;

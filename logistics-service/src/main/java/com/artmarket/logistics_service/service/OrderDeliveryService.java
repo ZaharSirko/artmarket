@@ -1,6 +1,6 @@
 package com.artmarket.logistics_service.service;
 
-import com.artmarket.DTO.*;
+import com.artmarket.dto.*;
 import com.artmarket.config.KafkaTopics;
 import com.artmarket.events.OrderUpdatedEvent;
 import com.artmarket.logistics_service.DTO.DeliveryRequest;

@@ -1,9 +1,9 @@
 package com.artmarket.events;
 
 
-import com.artmarket.DTO.OrderStatus;
-import com.artmarket.DTO.PaintingResponse;
-import com.artmarket.DTO.ShippingResponse;
+import com.artmarket.dto.OrderStatus;
+import com.artmarket.dto.PaintingResponse;
+import com.artmarket.dto.ShippingResponse;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Builder;
 

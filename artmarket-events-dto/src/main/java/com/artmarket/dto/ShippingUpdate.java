@@ -1,4 +1,4 @@
-package com.artmarket.DTO;
+package com.artmarket.dto;
 
 public record ShippingUpdate(
         String shippingProvider,

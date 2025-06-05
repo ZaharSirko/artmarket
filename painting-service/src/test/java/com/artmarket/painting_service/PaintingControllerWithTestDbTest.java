@@ -1,45 +1,41 @@
 package com.artmarket.painting_service;
 
+import com.artmarket.painting_service.model.PaintingDoc;
 
+
+import org.hamcrest.Matchers;
+
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.TestMethodOrder;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.File;
 import java.io.FileInputStream;
+
 import java.nio.charset.StandardCharsets;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+
+
+
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
 
-
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class PaintingControllerWithTestDbTest extends BaseIntegrationTest  {
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest")
-            .withDatabaseName("testdb")
-            .withUsername("testuser")
-            .withPassword("testpass");
-
-    @DynamicPropertySource
-    static void registerTestDbProps(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-    }
-
     @Test
+    @Order(1)
     void shouldCreatePainting_withValidDataAndToken() throws Exception {
         File testImage = new File("src/test/resources/van_gog_sunflower_test.jpg");
 
@@ -105,6 +101,74 @@ class PaintingControllerWithTestDbTest extends BaseIntegrationTest  {
 
 
     @Test
+    void shouldGetPaintingsByIds_withValidToken() throws Exception {
+        mockMvc.perform(get("/paintings/by-ids")
+                        .param("ids", "1", "2")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+
+    @Test
+    void shouldGetPaintingsByUserId_withValidToken() throws Exception {
+        mockMvc.perform(get("/paintings/user/{userId}", userId)
+                        .param("page", "0")
+                        .param("size", "10")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+
+    @Test
+    void shouldReturnSecureInfo_withValidToken() throws Exception {
+        mockMvc.perform(get("/paintings/secure")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("Hello")))
+                .andExpect(content().string(Matchers.containsString("roles")));
+    }
+
+    @Test
+    void shouldServeImage_withExistingFile() throws Exception {
+        String filename = "van_gog_sunflower_test.jpg"; // переконайся, що файл існує в uploadDirectory
+
+        mockMvc.perform(get("/paintings/images/{filename}", filename)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, Matchers.containsString("image/")));
+    }
+
+    @Test
+    @Order(2)
+    void shouldSearchPaintings_withQueryAndToken() throws Exception {
+        PaintingDoc painting1 = new PaintingDoc(1L, "Van Gogh Sunflower", "Iconic work by Van Gogh", "Vincent van Gogh");
+        paintingElasticsearchRepository.save(painting1);
+
+        elasticsearchTemplate.indexOps(PaintingDoc.class).refresh();
+
+        mockMvc.perform(get("/paintings/search")
+                        .param("query", "Van Gogh")
+                        .param("page", "0")
+                        .param("size", "5")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.content[0].title").value(Matchers.oneOf("Starry Night", "Van Gogh Sunflower")));
+    }
+
+
+    @Test
+    void shouldGetPaintingById_withValidIdAndToken() throws Exception {
+        Long paintingId = 1L;
+        mockMvc.perform(get("/paintings/{id}", paintingId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value(paintingId));
+    }
+
+    @Test
+    @Order(Ordered.LOWEST_PRECEDENCE)
     void shouldDeletePainting_withValidIdAndToken() throws Exception {
         Long paintingId = 1L;
 
@@ -113,6 +177,7 @@ class PaintingControllerWithTestDbTest extends BaseIntegrationTest  {
                 .andExpect(status().isOk())
                 .andExpect(content().string("Painting deleted successfully"));
     }
+
 
 
 }

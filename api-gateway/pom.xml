@@ -29,6 +29,7 @@
 	<properties>
 		<java.version>22</java.version>
 		<spring-cloud.version>2024.0.1</spring-cloud.version>
+<!--		<dockerPassword>${dockerPassword}</dockerPassword>-->
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -142,6 +143,16 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
+					<image>
+						<name>zaharsirko/${project.artifactId}</name>
+						<publish>true</publish>
+					</image>
+					<docker>
+						<publishRegistry>
+							<username>zaharsirko</username>
+							<password>${dockerPassword}</password>
+						</publishRegistry>
+					</docker>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>

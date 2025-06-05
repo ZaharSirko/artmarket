@@ -1,7 +1,7 @@
 package com.artmarket.logistics_service.service;
 
 
-import com.artmarket.DTO.OrderResponse;
+import com.artmarket.dto.OrderResponse;
 import com.artmarket.events.OrderCreatedEvent;
 import com.artmarket.events.OrderUpdatedEvent;
 import lombok.RequiredArgsConstructor;

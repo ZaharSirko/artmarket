@@ -1,7 +1,7 @@
 package com.artmarket.order_service.service.heplers;
 
 
-import com.artmarket.DTO.*;
+import com.artmarket.dto.*;
 import com.artmarket.order_service.DTO.OrderItemRequest;
 import com.artmarket.order_service.DTO.OrderRequest;
 import com.artmarket.order_service.client.PaintingClient;

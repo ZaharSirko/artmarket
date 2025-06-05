@@ -1,6 +1,6 @@
 package com.artmarket.user_service;
 
-import com.artmarket.DTO.PaintingResponse;
+import com.artmarket.dto.PaintingResponse;
 import com.artmarket.user_service.DTO.client.PageResponse;
 import com.artmarket.user_service.client.PaintingClient;
 import com.artmarket.user_service.service.KeycloakUserService;
@@ -58,8 +58,6 @@ class UserServiceApplicationTests {
 	@MockBean
 	protected PaintingClient paintingClient;
 
-
-	private KeycloakUserService keycloakUserService;
 
 	protected String token;
 

@@ -1,6 +1,6 @@
 package com.artmarket.painting_service.controller;
 
-import com.artmarket.DTO.PaintingResponse;
+import com.artmarket.dto.PaintingResponse;
 import com.artmarket.painting_service.DTO.PaintingRequest;
 import com.artmarket.painting_service.service.PaintingService;
 import lombok.RequiredArgsConstructor;

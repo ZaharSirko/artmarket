@@ -1,10 +1,9 @@
 package com.artmarket.logistics_service.client;
 
 
-import com.artmarket.DTO.OrderResponse;
-import com.artmarket.DTO.OrderUpdateRequest;
+import com.artmarket.dto.OrderResponse;
+import com.artmarket.dto.OrderUpdateRequest;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

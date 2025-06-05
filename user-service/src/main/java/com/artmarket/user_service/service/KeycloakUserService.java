@@ -1,16 +1,14 @@
 package com.artmarket.user_service.service;
 
-import com.artmarket.DTO.UserResponse;
+import com.artmarket.dto.UserResponse;
 import com.artmarket.user_service.DTO.UserRegistrationRequest;
 
 import com.artmarket.user_service.DTO.client.PageResponse;
 import com.artmarket.user_service.DTO.client.UserWithPaintingsResponse;
 import com.artmarket.user_service.client.PaintingClient;
-import com.artmarket.user_service.config.KeycloakConfig;
 import com.artmarket.user_service.service.helpers.KeycloakHelper;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
-import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;

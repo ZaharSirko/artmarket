@@ -1,6 +1,6 @@
 package com.artmarket.order_service.model;
 
-import com.artmarket.DTO.ShippingStatus;
+import com.artmarket.dto.ShippingStatus;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;

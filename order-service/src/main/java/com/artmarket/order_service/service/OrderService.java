@@ -1,6 +1,6 @@
 package com.artmarket.order_service.service;
 
-import com.artmarket.DTO.*;
+import com.artmarket.dto.*;
 import com.artmarket.events.OrderUpdatedEvent;
 
 import com.artmarket.order_service.DTO.OrderItemRequest;

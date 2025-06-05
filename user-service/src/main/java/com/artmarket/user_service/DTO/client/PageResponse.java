@@ -1,14 +1,8 @@
 package com.artmarket.user_service.DTO.client;
 
-import com.artmarket.DTO.PaintingResponse;
-import lombok.NonNull;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import com.artmarket.dto.PaintingResponse;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 
 public record PageResponse(
         List<PaintingResponse> content,

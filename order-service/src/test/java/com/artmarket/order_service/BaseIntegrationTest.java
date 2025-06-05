@@ -1,7 +1,7 @@
 package com.artmarket.order_service;
 
-import com.artmarket.DTO.PaintingResponse;
-import com.artmarket.DTO.UserResponse;
+import com.artmarket.dto.PaintingResponse;
+import com.artmarket.dto.UserResponse;
 
 
 import com.artmarket.order_service.DTO.OrderItemRequest;

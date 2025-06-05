@@ -1,7 +1,7 @@
 package com.artmarket.user_service.controller;
 
 
-import com.artmarket.DTO.UserResponse;
+import com.artmarket.dto.UserResponse;
 import com.artmarket.user_service.DTO.UserRegistrationRequest;
 
 import com.artmarket.user_service.DTO.client.PageResponse;

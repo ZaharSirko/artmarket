@@ -1,8 +1,8 @@
 package com.artmarket.order_service;
 
 
-import com.artmarket.DTO.OrderStatus;
-import com.artmarket.DTO.PaintingResponse;
+import com.artmarket.dto.OrderStatus;
+import com.artmarket.dto.PaintingResponse;
 import com.artmarket.order_service.model.Order;
 import com.artmarket.order_service.model.OrderItem;
 import com.artmarket.order_service.repository.OrderRepository;

@@ -1,5 +1,6 @@
 package com.artmarket.api_gateway.routes;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.server.mvc.filter.CircuitBreakerFilterFunctions;
 import org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions;
 import org.springframework.context.annotation.Bean;
@@ -16,12 +17,19 @@ import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouter
 
 @Configuration
 public class Routes {
-
+      @Value("${painting-service-host}")
+      String paintingServiceHost ;
+      @Value("${user-service-host}")
+      String userServiceHost;
+      @Value("${order-service-host}")
+      String orderServiceHost;
+      @Value("${logistics-service-host}")
+      String logisticsServiceHost;
         @Bean
         public RouterFunction<ServerResponse> paintingServiceRoutes() {
             return route("painting_service")
                     .route(RequestPredicates.path("/paintings/**"),
-                            HandlerFunctions.http("http://localhost:8080"))
+                            HandlerFunctions.http(paintingServiceHost))
                     .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                             "paintingServiceCircuitBreaker",
                             URI.create("forward:/fallbackRoute")))
@@ -32,7 +40,7 @@ public class Routes {
         public RouterFunction<ServerResponse> paintingServiceSwaggerRoute() {
             return route("painting_service_swagger")
                     .route(RequestPredicates.path("/aggregate/painting-service/v3/api-docs"),
-                            HandlerFunctions.http("http://localhost:8080"))
+                            HandlerFunctions.http(paintingServiceHost))
                     .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                             "paintingServiceSwaggerCircuitBreaker",
                             URI.create("forward:/fallbackRoute")))
@@ -44,7 +52,7 @@ public class Routes {
         public RouterFunction<ServerResponse> userServiceRoutes() {
             return route("user_service")
                     .route(RequestPredicates.path("/users/**"),
-                            HandlerFunctions.http("http://localhost:8081"))
+                            HandlerFunctions.http(userServiceHost))
                     .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                             "userServiceCircuitBreaker",
                             URI.create("forward:/fallbackRoute")))
@@ -55,7 +63,7 @@ public class Routes {
         public RouterFunction<ServerResponse> userServiceSwaggerRoute() {
             return route("user_service_swagger")
                     .route(RequestPredicates.path("/aggregate/user-service/v3/api-docs"),
-                            HandlerFunctions.http("http://localhost:8081"))
+                            HandlerFunctions.http(userServiceHost))
                     .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                             "userServiceSwaggerCircuitBreaker",
                             URI.create("forward:/fallbackRoute")))
@@ -67,7 +75,7 @@ public class Routes {
     public RouterFunction<ServerResponse> orderServiceRoutes() {
         return route("order_service")
                 .route(RequestPredicates.path("/orders/**"),
-                        HandlerFunctions.http("http://localhost:8082"))
+                        HandlerFunctions.http(orderServiceHost))
                 .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                         "orderServiceCircuitBreaker",
                         URI.create("forward:/fallbackRoute")))
@@ -78,7 +86,7 @@ public class Routes {
     public RouterFunction<ServerResponse> orderServiceSwaggerRoute() {
         return route("order_service_swagger")
                 .route(RequestPredicates.path("/aggregate/order-service/v3/api-docs"),
-                        HandlerFunctions.http("http://localhost:8082"))
+                        HandlerFunctions.http(orderServiceHost))
                 .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                         "orderServiceSwaggerCircuitBreaker",
                         URI.create("forward:/fallbackRoute")))
@@ -90,7 +98,7 @@ public class Routes {
     public RouterFunction<ServerResponse> logisticServiceRoutes() {
         return route("logistic_service")
                 .route(RequestPredicates.path("/logistics/**"),
-                        HandlerFunctions.http("http://localhost:8083"))
+                        HandlerFunctions.http(logisticsServiceHost))
                 .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                         "orderServiceCircuitBreaker",
                         URI.create("forward:/fallbackRoute")))
@@ -101,7 +109,7 @@ public class Routes {
     public RouterFunction<ServerResponse> logisticServiceSwaggerRoute() {
         return route("logistic_service_swagger")
                 .route(RequestPredicates.path("/aggregate/logistic-service/v3/api-docs"),
-                        HandlerFunctions.http("http://localhost:8083"))
+                        HandlerFunctions.http(logisticsServiceHost))
                 .filter(CircuitBreakerFilterFunctions.circuitBreaker(
                         "orderServiceSwaggerCircuitBreaker",
                         URI.create("forward:/fallbackRoute")))

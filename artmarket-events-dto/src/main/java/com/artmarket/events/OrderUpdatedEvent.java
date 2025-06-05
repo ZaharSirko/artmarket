@@ -1,7 +1,7 @@
 package com.artmarket.events;
 
 
-import com.artmarket.DTO.ShippingUpdate;
+import com.artmarket.dto.ShippingUpdate;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.math.BigDecimal;

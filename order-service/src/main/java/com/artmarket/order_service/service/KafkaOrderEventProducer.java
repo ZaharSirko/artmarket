@@ -1,9 +1,9 @@
 package com.artmarket.order_service.service;
 
-import com.artmarket.DTO.OrderResponse;
-import com.artmarket.DTO.OrderStatus;
-import com.artmarket.DTO.PaintingResponse;
-import com.artmarket.DTO.ShippingUpdate;
+import com.artmarket.dto.OrderResponse;
+import com.artmarket.dto.OrderStatus;
+import com.artmarket.dto.PaintingResponse;
+import com.artmarket.dto.ShippingUpdate;
 import com.artmarket.config.KafkaTopics;
 import com.artmarket.events.OrderCreatedEvent;
 import com.artmarket.events.OrderEvent;

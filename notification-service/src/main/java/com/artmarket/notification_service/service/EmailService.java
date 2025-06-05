@@ -1,6 +1,6 @@
 package com.artmarket.notification_service.service;
 
-import com.artmarket.DTO.PaintingResponse;
+import com.artmarket.dto.PaintingResponse;
 import com.artmarket.events.OrderEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

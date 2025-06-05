@@ -1,7 +1,7 @@
 package com.artmarket.painting_service.client;
 
 
-import com.artmarket.DTO.UserResponse;
+import com.artmarket.dto.UserResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;

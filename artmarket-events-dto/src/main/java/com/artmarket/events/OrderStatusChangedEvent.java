@@ -1,7 +1,7 @@
 package com.artmarket.events;
 
 
-import com.artmarket.DTO.OrderStatus;
+import com.artmarket.dto.OrderStatus;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.time.LocalDateTime;

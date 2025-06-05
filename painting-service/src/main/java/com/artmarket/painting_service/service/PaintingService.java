@@ -1,7 +1,7 @@
 package com.artmarket.painting_service.service;
 
 
-import com.artmarket.DTO.PaintingResponse;
+import com.artmarket.dto.PaintingResponse;
 import com.artmarket.painting_service.DTO.PaintingRequest;
 import com.artmarket.painting_service.model.Painting;
 import com.artmarket.painting_service.model.PaintingDoc;
